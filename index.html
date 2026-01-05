@@ -2,109 +2,40 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<title>AI World | Welcome</title>
+<title>Record Pattern Analysis</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-
-<style>
-*{box-sizing:border-box}
-
-body{
-  margin:0;
-  font-family:system-ui, Arial;
-  height:100vh;
-  color:#fff;
-}
-
-/* ===== BACKGROUND ===== */
-.hero{
-  height:100vh;
-  background:
-    linear-gradient(rgba(2,6,23,0.75), rgba(2,6,23,0.85)),
-    url("https://images.unsplash.com/photo-1548013146-72479768bada");
-  background-size:cover;
-  background-position:center;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-align:center;
-  padding:20px;
-}
-
-/* ===== CONTENT ===== */
-.box{
-  max-width:720px;
-  padding:40px 26px;
-  background:rgba(2,6,23,0.45);
-  backdrop-filter:blur(6px);
-  border-radius:20px;
-  border:1px solid rgba(255,255,255,0.15);
-}
-
-.box h1{
-  font-size:42px;
-  margin-bottom:16px;
-  background:linear-gradient(90deg,#38bdf8,#22c55e);
-  -webkit-background-clip:text;
-  color:transparent;
-}
-
-.box p{
-  font-size:17px;
-  line-height:1.6;
-  color:#e5e7eb;
-  margin-bottom:30px;
-}
-
-/* ===== BUTTON ===== */
-.enter-btn{
-  padding:14px 36px;
-  font-size:17px;
-  border:none;
-  border-radius:30px;
-  cursor:pointer;
-  background:linear-gradient(90deg,#38bdf8,#22c55e);
-  color:#020617;
-  box-shadow:0 10px 30px rgba(0,0,0,.4);
-}
-
-/* ===== FOOTER TEXT ===== */
-.note{
-  margin-top:20px;
-  font-size:13px;
-  color:#cbd5f5;
-}
-</style>
+<link rel="stylesheet" href="style.css">
 </head>
-
 <body>
 
-<section class="hero">
-  <div class="box">
-    <h1>Welcome to AI World</h1>
+<h2>Mon–Sat Record Pattern Analysis (1 Row = 1 Week)</h2>
 
-    <p>
-      Bharat ki virasat aur future ki technology ka sangam.<br>
-      AI World ek aisa platform hai jahan smart analysis,
-      intelligent tools aur advanced logic ek hi jagah milta hai.
-    </p>
+<div class="controls">
+  <button onclick="enableEdit()">Edit</button>
+  <button onclick="saveData()">Save</button>
+  <button onclick="runAnalysis()">Run Analysis</button>
+</div>
 
-    <button class="enter-btn" onclick="enterSite()">
-      ENTER AI WORLD →
-    </button>
+<table id="recordTable">
+  <thead>
+    <tr>
+      <th>Week</th>
+      <th>Mon</th><th>Tue</th><th>Wed</th>
+      <th>Thu</th><th>Fri</th><th>Sat</th>
+    </tr>
+  </thead>
+  <tbody></tbody>
+</table>
 
-    <div class="note">
-      Inspired by India • Powered by AI
-    </div>
-  </div>
-</section>
+<h3>✔ Check Lines (Matched Patterns)</h3>
+<div id="checkLines"></div>
 
-<script>
-function enterSite(){
-  alert("Next Step: AI Tools Page 🚀");
-  // future me yahan redirect hoga
-  // window.location.href = "tools.html";
-}
-</script>
+<p class="note">
+This tool shows historical pattern visualization only.  
+No prediction or betting advice.
+</p>
 
+<script src="storage.js"></script>
+<script src="analysis.js"></script>
 </body>
 </html>
