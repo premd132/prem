@@ -1,0 +1,60 @@
+body {
+  font-family: Arial, sans-serif;
+  padding: 10px;
+  background: #f7f7f7;
+}
+
+h2, h3 {
+  text-align: center;
+}
+
+.controls {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+button {
+  padding: 6px 12px;
+  margin: 4px;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  background: #fff;
+}
+
+th, td {
+  border: 1px solid #ccc;
+  text-align: center;
+  padding: 6px;
+  position: relative;
+}
+
+td.editable {
+  background: #eef;
+}
+
+.circle {
+  border-radius: 50%;
+  border: 3px solid red;
+}
+
+.circle.family {
+  border-color: orange;
+}
+
+.check-line {
+  margin: 8px 0;
+  padding: 6px;
+  background: #e0ffe0;
+  border-left: 5px solid green;
+  font-size: 14px;
+}
+
+.note {
+  font-size: 12px;
+  text-align: center;
+  color: #555;
+  margin-top: 15px;
+}
