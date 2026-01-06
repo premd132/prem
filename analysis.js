@@ -11,53 +11,67 @@ const FAMILY = [
 
 function familyOf(val) {
   if (!val) return null;
-  for (const f of FAMILY) if (f.includes(val)) return f.join("-");
+  val = val.trim();
+  for (const f of FAMILY) {
+    if (f.includes(val)) return f.join("-");
+  }
   return null;
 }
 
-/* MAIN ANALYSIS */
 function runAnalysis() {
-  alert("Run Analysis Clicked");
-
   clearMarks();
-  document.getElementById("checkLines").innerHTML = "";
+  const box = document.getElementById("checkLines");
+  box.innerHTML = "";
 
   const rows = [...document.querySelectorAll("#recordTable tbody tr")];
-  if (rows.length < 11) return alert("At least 10 rows required");
+
+  if (rows.length < 10) {
+    box.innerHTML = "<div class='check-line'>❌ At least 10 rows required</div>";
+    return;
+  }
 
   const last10 = rows.slice(-10);
-  const patterns = [];
+  let found = 0;
 
   for (let col = 1; col <= 6; col++) {
-    const famSeq = last10.map(r => familyOf(r.children[col].innerText));
-    if (famSeq.includes(null)) continue;
+    const pattern = last10.map(r => familyOf(r.children[col].innerText));
 
-    rows.slice(0, -10).forEach((_, i) => {
-      if (i + 10 > rows.length - 10) return;
+    if (pattern.some(v => v === null)) continue;
+
+    for (let start = 0; start <= rows.length - 10; start++) {
+      if (start >= rows.length - 10) continue;
 
       let match = true;
       for (let k = 0; k < 10; k++) {
-        const f = familyOf(rows[i+k].children[col].innerText);
-        if (f !== famSeq[k]) { match = false; break; }
+        const f = familyOf(rows[start + k].children[col].innerText);
+        if (f !== pattern[k]) {
+          match = false;
+          break;
+        }
       }
 
-      if (match) patterns.push({ col, start: i, len: 10 });
-    });
+      if (match) {
+        found++;
+        createCheckLine({ col, start, len: 10 }, found);
+      }
+    }
   }
 
-  patterns.forEach((p, idx) => createCheckLine(p, idx));
+  if (found === 0) {
+    box.innerHTML = "<div class='check-line'>⚠ No matching pattern found</div>";
+  }
 }
 
 /* CHECK LINE */
 function createCheckLine(p, idx) {
   const div = document.createElement("div");
   div.className = "check-line";
-  div.innerText = `Pattern ${idx+1} | Column ${p.col}`;
-  let on = false;
+  div.innerText = `Pattern ${idx} | Column ${p.col}`;
 
+  let active = false;
   div.onclick = () => {
-    on = !on;
-    if (on) drawPattern(p);
+    active = !active;
+    if (active) drawPattern(p);
     else clearMarks();
   };
 
@@ -82,5 +96,4 @@ function clearMarks() {
     .forEach(td => td.classList.remove("circle","connect-top"));
 }
 
-/* expose */
 window.runAnalysis = runAnalysis;
