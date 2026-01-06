@@ -1,39 +1,60 @@
-body {
+body{
   font-family: Arial, sans-serif;
-  padding: 10px;
+  padding:10px;
 }
 
-table {
+table{
   border-collapse: collapse;
-  width: 100%;
+  width:100%;
 }
 
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px;
-  text-align: center;
+th,td{
+  border:1px solid #ccc;
+  padding:6px;
+  text-align:center;
 }
 
-.controls {
-  margin: 10px 0;
+.controls{
+  margin:10px 0;
 }
 
-.editable {
-  background: #eef;
+.editable{
+  background:#eef;
 }
 
-.check-line {
-  background: #eaffea;
-  margin: 6px 0;
-  padding: 6px;
-  border-left: 5px solid green;
+.check-line{
+  background:#eaffea;
+  margin:6px 0;
+  padding:6px;
+  border-left:5px solid green;
+  cursor:pointer;
 }
-.circle{
-  border:2px solid red;
+
+/* 🔴 VISUAL MARKING */
+#recordTable td{
+  position:relative;
+}
+
+.circle::after{
+  content:"";
+  position:absolute;
+  top:50%;
+  left:50%;
+  width:22px;
+  height:22px;
+  transform:translate(-50%,-50%);
+  border:3px solid red;
   border-radius:50%;
-  font-weight:bold;
+  pointer-events:none;
 }
 
-.connect-top{
-  border-top:3px solid red !important;
+.connect-top::before{
+  content:"";
+  position:absolute;
+  top:-18px;
+  left:50%;
+  width:3px;
+  height:18px;
+  background:red;
+  transform:translateX(-50%);
 }
