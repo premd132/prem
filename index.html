@@ -14,6 +14,12 @@
   <button onclick="enableEdit()">Edit</button>
   <button onclick="saveData()">Save</button>
   <button onclick="runAnalysis()">Run Analysis</button>
+  <div class="paste-box">
+  <textarea id="pasteArea"
+    placeholder="Yahan Mon–Sat record paste karo (har line = 1 week)"
+    rows="6"></textarea>
+  <button onclick="pasteRecord()">Paste Record</button>
+  </div>
 </div>
 
 <table id="recordTable">
