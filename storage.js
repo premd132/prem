@@ -1,19 +1,18 @@
 const TOTAL_WEEKS = 300;
 const tbody = document.querySelector("#recordTable tbody");
 
-function loadData() {
-  const saved = JSON.parse(localStorage.getItem("recordData"));
-  tbody.innerHTML = "";
+/* 🔴 IMPORTANT:
+   Page load par purana data use nahi hoga
+   Sirf CSV upload se hi table bharegi
+*/
 
-  if (!saved) {
-    for (let i = 0; i < TOTAL_WEEKS; i++) {
-      addRow(["", "", "", "", "", ""], i + 1);
-    }
-  } else {
-    saved.forEach((row, i) => addRow(row, i + 1));
-    for (let i = saved.length; i < TOTAL_WEEKS; i++) {
-      addRow(["", "", "", "", "", ""], i + 1);
-    }
+// 🔥 FORCE CLEAR OLD DATA
+localStorage.removeItem("recordData");
+
+function loadData() {
+  tbody.innerHTML = "";
+  for (let i = 0; i < TOTAL_WEEKS; i++) {
+    addRow(["", "", "", "", "", ""], i + 1);
   }
 }
 
@@ -21,7 +20,7 @@ function addRow(values, week) {
   const tr = document.createElement("tr");
   tr.innerHTML =
     `<td>W${week}</td>` +
-    values.map(v => `<td contenteditable="false">${v || ""}</td>`).join("");
+    values.map(v => `<td contenteditable="false">${v}</td>`).join("");
   tbody.appendChild(tr);
 }
 
@@ -35,13 +34,8 @@ function enableEdit() {
 }
 
 function saveData() {
-  const data = [];
-  tbody.querySelectorAll("tr").forEach(tr => {
-    const cells = [...tr.querySelectorAll("td")].slice(1);
-    data.push(cells.map(td => td.innerText.trim()));
-  });
-  localStorage.setItem("recordData", JSON.stringify(data));
-  alert("Data Saved");
+  alert("CSV mode active. Local save disabled.");
 }
 
+// Page load
 loadData();
