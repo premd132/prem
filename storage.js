@@ -1,10 +1,19 @@
 const tableBody = document.querySelector("#recordTable tbody");
+const TOTAL_WEEKS = 25;
 
 function loadData() {
-  const saved = JSON.parse(localStorage.getItem("recordData")) || [];
+  let saved = JSON.parse(localStorage.getItem("recordData"));
+
   tableBody.innerHTML = "";
 
-  saved.forEach((row, i) => addRow(row, i + 1));
+  if (!saved || saved.length === 0) {
+    // Auto create empty weeks
+    for (let i = 0; i < TOTAL_WEEKS; i++) {
+      addRow(["","","","","",""], i + 1);
+    }
+  } else {
+    saved.forEach((row, i) => addRow(row, i + 1));
+  }
 }
 
 function saveData() {
@@ -14,12 +23,13 @@ function saveData() {
     data.push(cells.map(td => td.innerText.trim()));
   });
   localStorage.setItem("recordData", JSON.stringify(data));
-  alert("Data Saved");
+  alert("Data Saved Successfully");
 }
 
-function addRow(values = ["","","","","",""], week) {
+function addRow(values, week) {
   const tr = document.createElement("tr");
-  tr.innerHTML = `<td>W${week}</td>` +
+  tr.innerHTML =
+    `<td>W${week}</td>` +
     values.map(v => `<td contenteditable="false">${v}</td>`).join("");
   tableBody.appendChild(tr);
 }
