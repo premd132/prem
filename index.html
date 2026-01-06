@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
+<meta charset="UTF-8">
 <title>Mon–Sat Record Pattern Analysis</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<link rel="stylesheet" href="style.css" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<link rel="stylesheet" href="style.css">
 </head>
 <body>
 
@@ -16,19 +16,20 @@
   <button onclick="runAnalysis()">Run Analysis</button>
 </div>
 
-<div class="paste-box">
-  <textarea id="pasteArea"
-    placeholder="Yahan poora record paste karo (har line = 1 week, Mon–Sat)"
-    rows="6"></textarea>
-  <button onclick="pasteRecord()">Paste Record</button>
+<div class="controls">
+  <input type="file" id="csvFile" accept=".csv" onchange="uploadCSV()">
 </div>
 
 <table id="recordTable">
   <thead>
     <tr>
       <th>Week</th>
-      <th>Mon</th><th>Tue</th><th>Wed</th>
-      <th>Thu</th><th>Fri</th><th>Sat</th>
+      <th>Mon</th>
+      <th>Tue</th>
+      <th>Wed</th>
+      <th>Thu</th>
+      <th>Fri</th>
+      <th>Sat</th>
     </tr>
   </thead>
   <tbody></tbody>
@@ -36,10 +37,6 @@
 
 <h3>✔ Check Lines</h3>
 <div id="checkLines"></div>
-
-<p class="note">
-This tool visualizes historical records only. No prediction.
-</p>
 
 <script src="storage.js"></script>
 <script src="analysis.js"></script>
