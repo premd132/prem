@@ -94,6 +94,11 @@ td.editable {
   <button onclick="pasteRecord()">Paste Record</button>
 </div>
 
+<div class="paste-box">
+  <input type="file" id="csvFile" accept=".csv">
+  <button onclick="loadCSV()">Upload CSV</button>
+</div>
+
 <table id="recordTable">
   <thead>
     <tr>
@@ -118,10 +123,10 @@ No prediction or betting advice.
 </p>
 
 <script>
-/* ================= STORAGE + TABLE ================= */
+/* ============ TABLE + STORAGE ============ */
 
 const tableBody = document.querySelector("#recordTable tbody");
-const TOTAL_WEEKS = 300; // 5+ years
+const TOTAL_WEEKS = 300;
 
 function loadData() {
   const saved = JSON.parse(localStorage.getItem("recordData"));
@@ -168,7 +173,7 @@ function saveData() {
 
 loadData();
 
-/* ================= ANALYSIS (UNCHANGED LOGIC) ================= */
+/* ============ ANALYSIS (NO CHANGE) ============ */
 
 function runAnalysis() {
   clearMarks();
@@ -214,7 +219,7 @@ function clearMarks() {
   );
 }
 
-/* ================= DIRECT ALL RECORD PASTE ================= */
+/* ============ DIRECT PASTE ============ */
 
 function pasteRecord() {
   const text = document.getElementById("pasteArea").value.trim();
@@ -233,13 +238,27 @@ function pasteRecord() {
       .map(v => v.padStart(2, "0"));
 
     const cells = rows[i].querySelectorAll("td");
-
     for (let d = 0; d < 6; d++) {
       cells[d + 1].innerText = values[d] || "";
     }
   });
 
-  alert("All record pasted. Ab Save dabao.");
+  alert("Record pasted. Ab Save dabao.");
+}
+
+/* ============ CSV UPLOAD ============ */
+
+function loadCSV() {
+  const file = document.getElementById("csvFile").files[0];
+  if (!file) return alert("CSV file select karo");
+
+  const reader = new FileReader();
+  reader.onload = function(e) {
+    const text = e.target.result.trim();
+    document.getElementById("pasteArea").value = text;
+    pasteRecord();
+  };
+  reader.readAsText(file);
 }
 </script>
 
