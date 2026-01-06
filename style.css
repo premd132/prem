@@ -28,3 +28,12 @@ th, td {
   padding: 6px;
   border-left: 5px solid green;
 }
+.circle{
+  border:2px solid red;
+  border-radius:50%;
+  font-weight:bold;
+}
+
+.connect-top{
+  border-top:3px solid red !important;
+}
