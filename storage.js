@@ -1,43 +1,50 @@
-const tbody = document.querySelector("#recordTable tbody");
-document.getElementById("csvFile").addEventListener("change", loadCSV);
+// ==============================
+// STORAGE + CSV HANDLER SCRIPT
+// ==============================
 
+// 🔹 Table body selector
+const tbody = document.querySelector("#recordTable tbody");
+
+// 🔹 Utility function — smart split for CSV lines
 function smartSplit(line) {
   // comma | semicolon | tab | multiple spaces
   return line.split(/[,;\t ]+/).map(v => v.trim()).filter(v => v !== "");
 }
 
+// 🔹 Load CSV file
 function loadCSV(e) {
   const file = e.target.files[0];
   if (!file) return;
 
   const reader = new FileReader();
   reader.onload = () => {
-    const text = reader.result;
+    const text = reader.result.trim();
     const lines = text.split(/\r?\n/);
 
+    // Clear previous data
     tbody.innerHTML = "";
 
-    for (let i = 1; i < lines.length; i++) { // header skip
-      if (!lines[i].trim()) continue;
-
+    // 🔥 Skip header (first line)
+    for (let i = 1; i < lines.length; i++) {
       const cols = smartSplit(lines[i]);
+      if (cols.length < 6) continue;
 
-      // Expect: Week + 6 values OR only 6 values
+      // Handle Week label + data
       let data;
-      if (cols.length >= 7) {
-        data = cols.slice(1, 7);
-      } else if (cols.length === 6) {
-        data = cols;
+      if (cols.length === 7) {
+        data = cols.slice(1, 7); // if Week is already present
       } else {
-        continue;
+        data = cols; // if no Week in CSV
       }
 
       addRow(data, i);
     }
   };
+
   reader.readAsText(file);
 }
 
+// 🔹 Add one row to table
 function addRow(values, week) {
   const tr = document.createElement("tr");
   tr.innerHTML =
@@ -46,17 +53,17 @@ function addRow(values, week) {
   tbody.appendChild(tr);
 }
 
-// EDIT MODE
+// 🔹 Enable editing
 function enableEdit() {
   document.querySelectorAll("#recordTable td").forEach((td, i) => {
-    if (i % 7 !== 0) {
+    if (i % 7 !== 0) { // skip Week column
       td.contentEditable = true;
       td.classList.add("editable");
     }
   });
 }
 
-// SAVE
+// 🔹 Save table to LocalStorage
 function saveData() {
   const data = [];
   document.querySelectorAll("#recordTable tbody tr").forEach(tr => {
@@ -64,14 +71,21 @@ function saveData() {
     data.push(row);
   });
   localStorage.setItem("recordData", JSON.stringify(data));
-  alert("Data Saved");
+  alert("✅ Data Saved Successfully!");
 }
 
-// LOAD SAVED
-(function () {
+// 🔹 Load saved data on page load
+(function loadSaved() {
   const saved = JSON.parse(localStorage.getItem("recordData"));
   if (!saved) return;
-
   tbody.innerHTML = "";
   saved.forEach((r, i) => addRow(r, i + 1));
 })();
+
+// 🔹 CSV Upload Event Bind (VERY IMPORTANT)
+document.addEventListener("DOMContentLoaded", () => {
+  const csvInput = document.getElementById("csvFile");
+  if (csvInput) {
+    csvInput.addEventListener("change", loadCSV);
+  }
+});
