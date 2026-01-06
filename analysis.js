@@ -11,11 +11,6 @@ h2,h3 { text-align:center; }
 .controls,.box { text-align:center; margin-bottom:10px; }
 button { padding:6px 12px; margin:4px; }
 
-textarea {
-  width:100%; max-width:520px;
-  padding:8px; font-size:14px;
-}
-
 .table-wrap { position:relative; overflow:auto; }
 table { width:100%; border-collapse:collapse; background:#fff; }
 th,td { border:1px solid #ccc; padding:6px; text-align:center; }
@@ -51,12 +46,6 @@ td.editable { background:#eef; }
 </div>
 
 <div class="box">
-  <textarea id="pasteArea" rows="6"
-    placeholder="Yahan poora record paste karo (har line = 1 week, Mon–Sat)"></textarea><br>
-  <button onclick="pasteRecord()">Paste Record</button>
-</div>
-
-<div class="box">
   <input type="file" id="csvFile" accept=".csv,text/csv">
   <button onclick="uploadCSV()">Upload CSV</button>
 </div>
@@ -83,7 +72,7 @@ Historical analysis only. No prediction.
 </p>
 
 <script>
-/* ===== TABLE + STORAGE (UNCHANGED) ===== */
+/* ===== TABLE + STORAGE (SAME) ===== */
 const TOTAL_WEEKS = 300;
 const tbody = document.querySelector("#recordTable tbody");
 
@@ -124,7 +113,7 @@ function saveData(){
 
 loadData();
 
-/* ===== ANALYSIS (SAME FORMULA) ===== */
+/* ===== ANALYSIS (FORMULA SAME) ===== */
 function runAnalysis(){
   clearAll();
   const rows=[...tbody.querySelectorAll("tr")];
@@ -178,39 +167,34 @@ function clearAll(){
   document.getElementById("lineLayer").innerHTML="";
 }
 
-/* ===== PASTE BUTTON ===== */
-function pasteRecord(){
-  const text=document.getElementById("pasteArea").value.trim();
-  if(!text) return;
-
-  tbody.querySelectorAll("tr").forEach(tr=>{
-    [...tr.querySelectorAll("td")].slice(1).forEach(td=>td.innerText="");
-  });
-
-  text.split(/\n+/).forEach((line,i)=>{
-    const row=tbody.querySelectorAll("tr")[i];
-    if(!row) return;
-    let v=line.replace(/\*/g,"00").split(/\s+|,/).map(x=>x.padStart(2,"0"));
-    const cells=row.querySelectorAll("td");
-    for(let d=0;d<6;d++) cells[d+1].innerText=v[d]||"";
-  });
-
-  alert("Paste complete. Save dabao.");
-}
-
-/* ===== CSV UPLOAD (ONLY DATA FILL) ===== */
+/* ===== CSV UPLOAD ONLY ===== */
 function uploadCSV(){
   const file=document.getElementById("csvFile").files[0];
-  if(!file){ alert("CSV select karo"); return; }
+  if(!file){ alert("CSV file select karo"); return; }
 
   const reader=new FileReader();
   reader.onload=function(){
     let text=reader.result.replace(/^\uFEFF/,"").replace(/\r/g,"").trim();
     let lines=text.split("\n");
+
     if(lines[0].toLowerCase().includes("mon")) lines.shift();
-    document.getElementById("pasteArea").value=lines.join("\n");
-    pasteRecord();
+
+    // table clear
+    tbody.querySelectorAll("tr").forEach(tr=>{
+      [...tr.querySelectorAll("td")].slice(1).forEach(td=>td.innerText="");
+    });
+
+    lines.forEach((line,i)=>{
+      const row=tbody.querySelectorAll("tr")[i];
+      if(!row) return;
+      let v=line.replace(/\*/g,"00").split(/\s+|,/).map(x=>x.padStart(2,"0"));
+      const cells=row.querySelectorAll("td");
+      for(let d=0;d<6;d++) cells[d+1].innerText=v[d]||"";
+    });
+
+    alert("CSV upload complete. Ab Save dabao.");
   };
+
   reader.readAsText(file);
 }
 </script>
