@@ -52,5 +52,26 @@ function addCheckLine(text) {
 function clearMarks() {
   document.querySelectorAll(".niche").forEach(c =>
     c.classList.remove("niche")
+                                              function pasteRecord() {
+  const text = document.getElementById("pasteArea").value.trim();
+  if (!text) return;
+
+  const lines = text.split(/\n+/);
+  const rows = document.querySelectorAll("#recordTable tbody tr");
+
+  lines.forEach((line, i) => {
+    if (!rows[i]) return;
+    const values = line.trim().split(/\s+|,/);
+    const cells = rows[i].querySelectorAll("td");
+
+    for (let d = 0; d < 6; d++) {
+      if (values[d]) {
+        cells[d + 1].innerText = values[d];
+      }
+    }
+  });
+
+  alert("Record pasted successfully. Ab Save dabao.");
+  }
   );
 }
