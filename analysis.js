@@ -9,75 +9,86 @@ const FAMILY = [
   ["55","00","05","50"]
 ];
 
-function getFamily(v){
-  for (let f of FAMILY) if (f.includes(v)) return f;
-  return null;
+function familyOf(v){
+  return FAMILY.find(f => f.includes(v)) || null;
 }
 
 function runAnalysis(){
-  clearAll();
-  const rows = [...tbody.querySelectorAll("tr")];
-  if (rows.length < 10) return alert("Minimum 10 rows required");
+  checkLinesBox.innerHTML="";
+  clearVisuals();
 
-  const base = rows.slice(-10).map(r =>
-    [...r.children].slice(1).map(td => td.innerText.trim())
-  );
+  const rows = [...tbody.querySelectorAll("tr")];
+  if (rows.length < 10){
+    alert("At least 10 rows required");
+    return;
+  }
+
+  // 🔹 LAST 10 ROWS → BASE PATTERN
+  const last10 = rows.slice(-10);
 
   for (let col = 0; col < 6; col++){
-    const baseCol = base.map(r => r[col]).filter(Boolean);
-    const famSeq = baseCol.map(v => getFamily(v));
-    if (famSeq.includes(null)) continue;
+    const baseFamilies = last10.map((tr,i)=>{
+      const td = tr.children[col+1];
+      return familyOf(td?.innerText.trim());
+    });
 
+    if (baseFamilies.includes(null)) continue;
+
+    // 🔍 SEARCH FULL RECORD
     for (let r = 0; r <= rows.length - 10; r++){
-      let points = [];
-      let ok = true;
+      let cells = [];
+      let valid = true;
 
       for (let i = 0; i < 10; i++){
-        const td = rows[r+i]?.children[col+1];
-        if (!td) { ok=false; break; }
+        const zigzagCol =
+          i % 2 === 0 ? col : Math.min(col + 1, 5);
 
-        const v = td.innerText.trim();
-        if (!getFamily(v) || !famSeq[i].includes(v)){
-          ok=false; break;
+        const td = rows[r+i]?.children[zigzagCol+1];
+        if (!td) { valid=false; break; }
+
+        const val = td.innerText.trim();
+        if (!familyOf(val) || !baseFamilies[i].includes(val)){
+          valid=false; break;
         }
-        points.push(td);
+
+        cells.push(td);
       }
 
-      if (ok){
-        createCheckLine(points, col);
+      if (valid){
+        addCheckLine(cells, col);
       }
     }
   }
 }
 
-function createCheckLine(cells, col){
+function addCheckLine(cells, col){
   const div = document.createElement("div");
   div.className = "check-line";
   div.innerText = `PATTERN FOUND | Column ${["Mon","Tue","Wed","Thu","Fri","Sat"][col]}`;
 
-  div.onclick = () => toggleHighlight(cells);
+  let active = false;
+
+  div.onclick = () => {
+    if (active){
+      clearVisuals();
+      active = false;
+    } else {
+      clearVisuals();
+      cells.forEach((td,i)=>{
+        td.classList.add("circle");
+        if (i > 0) td.classList.add("connect-top");
+      });
+      active = true;
+    }
+  };
+
   checkLinesBox.appendChild(div);
 }
 
-function toggleHighlight(cells){
-  const active = cells[0].classList.contains("circle");
-
-  clearVisuals();
-
-  if (!active){
-    cells.forEach((td,i)=>{
-      td.classList.add("circle");
-      if (i > 0) td.classList.add("connect-top");
-    });
-  }
-}
-
 function clearVisuals(){
-  document.querySelectorAll(".circle,.connect-top")
-    .forEach(el=>el.classList.remove("circle","connect-top"));
-}
-
-function clearAll(){
-  checkLinesBox.innerHTML="";
-  clearVisuals();
+  document
+    .querySelectorAll(".circle,.connect-top")
+    .forEach(el=>{
+      el.classList.remove("circle","connect-top");
+    });
 }
