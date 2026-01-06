@@ -1,7 +1,7 @@
 body {
   font-family: Arial, sans-serif;
   padding: 10px;
-  background: #f7f7f7;
+  background: #f5f5f5;
 }
 
 h2, h3 {
@@ -16,6 +16,18 @@ h2, h3 {
 button {
   padding: 6px 12px;
   margin: 4px;
+}
+
+.paste-box {
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+#pasteArea {
+  width: 100%;
+  max-width: 520px;
+  padding: 8px;
+  font-size: 14px;
 }
 
 table {
@@ -35,19 +47,16 @@ td.editable {
   background: #eef;
 }
 
-.circle {
+.niche {
+  border: 3px solid #007bff;
   border-radius: 50%;
-  border: 3px solid red;
-}
-
-.circle.family {
-  border-color: orange;
+  font-weight: bold;
 }
 
 .check-line {
-  margin: 8px 0;
+  margin: 6px 0;
   padding: 6px;
-  background: #e0ffe0;
+  background: #eaffea;
   border-left: 5px solid green;
   font-size: 14px;
 }
@@ -56,21 +65,5 @@ td.editable {
   font-size: 12px;
   text-align: center;
   color: #555;
-  margin-top: 15px;
-}
-.niche {
-  border: 3px solid #007bff;
-  border-radius: 50%;
-  font-weight: bold;
-  color: #003366;
-  .paste-box {
-  margin: 10px 0;
-  text-align: center;
-}
-
-#pasteArea {
-  width: 100%;
-  max-width: 500px;
-  padding: 8px;
-  font-size: 14px;
+  margin-top: 12px;
 }
