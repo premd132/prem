@@ -130,3 +130,24 @@ function runStep4(){
 
   console.log("STEP-4 RESULTS:", results);
 }
+/* ===== STEP 5: DRAW / CLEAR ===== */
+
+function clearDrawing(){
+  document.querySelectorAll("#recordTable td")
+    .forEach(td=>{
+      td.classList.remove("circle","v-line");
+    });
+}
+
+function drawMatch(match){
+  const rows = [...document.querySelectorAll("#recordTable tbody tr")];
+
+  match.steps.forEach((step,i)=>{
+    const td = rows[step.row].children[step.col + 1];
+    td.classList.add("circle");
+
+    if(i > 0){
+      td.classList.add("v-line");
+    }
+  });
+}
