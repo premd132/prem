@@ -18,20 +18,25 @@
 <input type="file" id="csvFile" accept=".csv">
 
 <table id="recordTable">
-  <thead>
-    <tr>
-      <th>Week</th>
-      <th>Mon</th><th>Tue</th><th>Wed</th>
-      <th>Thu</th><th>Fri</th><th>Sat</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
+<thead>
+<tr>
+<th>Week</th>
+<th>Mon</th><th>Tue</th><th>Wed</th>
+<th>Thu</th><th>Fri</th><th>Sat</th>
+</tr>
+</thead>
+<tbody></tbody>
 </table>
+
+<h3>AI Prediction Panel</h3>
+<div id="aiPanel"></div>
 
 <h3>✔ Check Lines</h3>
 <div id="checkLines"></div>
 
 <script src="storage.js"></script>
 <script src="analysis.js"></script>
+<script src="renderer.js"></script>
+<script src="prediction.js"></script>
 </body>
 </html>
