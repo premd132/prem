@@ -1,6 +1,18 @@
 body { font-family: Arial; padding:10px }
-table { width:100%; border-collapse:collapse }
+table { width:100%; border-collapse:collapse; margin-top:10px }
 th,td { border:1px solid #ccc; padding:6px; text-align:center }
 
 .controls { margin-bottom:10px }
 .editable { background:#eef }
+
+.check-line {
+  padding:6px;
+  margin:6px 0;
+  background:#eaffea;
+  border-left:4px solid green;
+  cursor:pointer;
+  font-size:14px;
+}
+.check-line.active {
+  background:#c9ffd0;
+}
