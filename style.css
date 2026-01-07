@@ -2,26 +2,21 @@ body {
   font-family: Arial, sans-serif;
   padding: 10px;
 }
-
 table {
   width: 100%;
   border-collapse: collapse;
 }
-
 th, td {
   border: 1px solid #ccc;
   padding: 6px;
   text-align: center;
 }
-
 .controls {
   margin: 10px 0;
 }
-
 .editable {
   background: #eef;
 }
-
 .check-line {
   background: #eaffea;
   border-left: 5px solid green;
@@ -29,12 +24,10 @@ th, td {
   padding: 6px;
   cursor: pointer;
 }
-
 /* 🔴 circle */
 td.circle {
   position: relative;
 }
-
 td.circle::after {
   content: "";
   position: absolute;
@@ -47,7 +40,6 @@ td.circle::after {
   transform: translate(-50%, -50%);
   pointer-events: none;
 }
-
 /* 🔴 vertical connect */
 td.connect::before {
   content: "";
