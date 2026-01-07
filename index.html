@@ -2,17 +2,16 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Mon–Sat Record Pattern Analyzer</title>
+<title>Pattern Engine – Base</title>
 <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<h2>Mon–Sat Record Pattern Analyzer</h2>
+<h2>Record Table (CSV + Edit + Save)</h2>
 
 <div class="controls">
   <button onclick="enableEdit()">Edit</button>
   <button onclick="saveData()">Save</button>
-  <button onclick="runAnalysis()">Run Analysis</button>
 </div>
 
 <input type="file" id="csvFile" accept=".csv">
@@ -28,15 +27,7 @@
 <tbody></tbody>
 </table>
 
-<h3>AI Prediction Panel</h3>
-<div id="aiPanel"></div>
-
-<h3>✔ Check Lines</h3>
-<div id="checkLines"></div>
-
 <script src="storage.js"></script>
-<script src="analysis.js"></script>
-<script src="renderer.js"></script>
-<script src="prediction.js"></script>
+<script src="engine.js"></script>
 </body>
 </html>
