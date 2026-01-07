@@ -1,102 +1,100 @@
-/* ===== STEP 3: BUILD PATTERN TEMPLATES ===== */
+// ================= HELPER =================
 
-function getLastRows(count=7){
-  const rows=[...document.querySelectorAll("#recordTable tbody tr")];
-  return rows.slice(-count);
+function getLastRows(n=7){
+  const rows = [...document.querySelectorAll("#recordTable tbody tr")];
+  return rows.slice(-n);
 }
 
-function extractFamilyGrid(lastRows){
-  return lastRows.map(tr=>{
-    return [...tr.children].slice(1).map(td=>{
-      const v=td.innerText.trim();
-      return v ? getFamily(v) : null;
-    });
-  });
+function safeCell(row,col){
+  return row && row.children[col+1] ? row.children[col+1] : null;
 }
+
+// ================= STEP 1: BUILD PATTERNS =================
 
 function buildPatternTemplates(){
-  const lastRows=getLastRows(7);
-  if(lastRows.length<6) return [];
+  const lastRows = getLastRows(7);
+  const templates = [];
 
-  const grid=extractFamilyGrid(lastRows);
-  const ROWS=grid.length;
-  const COLS=6;
-  const templates=[];
-
-  // vertical
-  for(let c=0;c<COLS;c++){
-    let fam=null, steps=[];
-    for(let r=0;r<ROWS;r++){
-      const f=grid[r][c];
-      if(f===null) continue;
-      if(fam===null) fam=f;
-      if(f===fam) steps.push({row:r,col:c,family:f});
-    }
+  // ---- COLUMN PATTERNS ----
+  for(let col=0; col<6; col++){
+    let steps=[];
+    lastRows.forEach((r,i)=>{
+      const td = safeCell(r,col);
+      if(!td) return;
+      const v = normalizeJodi(td.innerText);
+      const fam = getFamily(v);
+      if(fam){
+        steps.push({row:i,col,fam});
+      }
+    });
     if(steps.length>=3){
-      templates.push({type:"vertical",family:fam,steps});
+      templates.push({
+        type:"column",
+        family:steps[0].fam,
+        steps
+      });
     }
   }
 
-  // diagonal ↘
-  for(let c=0;c<=COLS-3;c++){
-    let fam=null, steps=[];
-    for(let r=0;r<ROWS && c+r<COLS;r++){
-      const f=grid[r][c+r];
-      if(f===null) continue;
-      if(fam===null) fam=f;
-      if(f===fam) steps.push({row:r,col:c+r,family:f});
-    }
+  // ---- DIAGONAL PATTERNS ----
+  for(let col=0; col<4; col++){
+    let steps=[];
+    lastRows.forEach((r,i)=>{
+      const td = safeCell(r,col+i);
+      if(!td) return;
+      const v = normalizeJodi(td.innerText);
+      const fam = getFamily(v);
+      if(fam){
+        steps.push({row:i,col:col+i,fam});
+      }
+    });
     if(steps.length>=3){
-      templates.push({type:"diagonal",family:fam,steps});
-    }
-  }
-
-  // zig-zag
-  for(let c=0;c<=COLS-2;c++){
-    let fam=null, steps=[];
-    for(let r=0;r<ROWS;r++){
-      const col=(r%2===0)?c:c+1;
-      const f=grid[r][col];
-      if(f===null) continue;
-      if(fam===null) fam=f;
-      if(f===fam) steps.push({row:r,col,family:f});
-    }
-    if(steps.length>=3){
-      templates.push({type:"zigzag",family:fam,steps});
+      templates.push({
+        type:"diagonal",
+        family:steps[0].fam,
+        steps
+      });
     }
   }
 
   return templates;
 }
 
-/* ===== STEP 4: FULL RECORD SCAN ===== */
+// ================= STEP 2: SCAN FULL RECORD =================
 
 function scanFullRecord(templates){
-  const rows=[...document.querySelectorAll("#recordTable tbody tr")];
+  const rows = [...document.querySelectorAll("#recordTable tbody tr")];
   const results=[];
 
   templates.forEach(tpl=>{
     const matches=[];
-    rows.forEach((_,startRow)=>{
+
+    rows.forEach((_,start)=>{
+      let found=[];
       let ok=true;
-      const found=[];
-      tpl.steps.forEach(step=>{
-        const r=startRow+step.row;
-        if(r>=rows.length){ ok=false; return; }
-        const td=rows[r].children[step.col+1];
-        const fam=td && td.innerText ? getFamily(td.innerText.trim()) : null;
+
+      tpl.steps.forEach(st=>{
+        const r = rows[start+st.row];
+        if(!r){ ok=false; return; }
+
+        const td = safeCell(r,st.col);
+        if(!td){ ok=false; return; }
+
+        const v = normalizeJodi(td.innerText);
+        const fam = getFamily(v);
         if(fam!==tpl.family) ok=false;
-        else found.push({row:r,col:step.col});
+        else found.push({row:start+st.row,col:st.col});
       });
+
       if(ok && found.length>=3){
-        matches.push({startRow,steps:found});
+        matches.push({steps:found});
       }
     });
+
     if(matches.length){
       results.push({
         type:tpl.type,
         family:tpl.family,
-        matchCount:matches.length,
         matches
       });
     }
@@ -105,16 +103,16 @@ function scanFullRecord(templates){
   return results;
 }
 
-/* ===== CHECK LINES UI ===== */
+// ================= STEP 3: UI CHECK LINES =================
 
 function runStep4(){
-  const templates=buildPatternTemplates();
-  const results=scanFullRecord(templates);
-
   const out=document.getElementById("checkLines");
   out.innerHTML="";
 
-  if(results.length===0){
+  const templates = buildPatternTemplates();
+  const results = scanFullRecord(templates);
+
+  if(!results.length){
     out.innerHTML="<i>No pattern found</i>";
     return;
   }
@@ -122,31 +120,35 @@ function runStep4(){
   results.forEach((res,i)=>{
     const div=document.createElement("div");
     div.className="check-line";
-    div.innerText=
-      `Pattern ${i+1}: ${res.type} | Family ${res.family} | Matches ${res.matchCount}`;
-    div.onclick=()=>div.classList.toggle("active");
+    div.innerText=`Pattern ${i+1} (${res.type}) | Family ${res.family} | Matches ${res.matches.length}`;
+
+    div.onclick=()=>{
+      const active=div.classList.toggle("active");
+      clearDrawing();
+      if(active){
+        res.matches.forEach(m=>{
+          drawMatch(m.steps);
+        });
+      }
+    };
     out.appendChild(div);
   });
-
-  console.log("STEP-4 RESULTS:", results);
 }
-/* ===== STEP 5: DRAW / CLEAR ===== */
+
+// ================= STEP 4: DRAW =================
 
 function clearDrawing(){
-  document.querySelectorAll("#recordTable td")
-    .forEach(td=>{
-      td.classList.remove("circle","v-line");
-    });
+  document.querySelectorAll("#recordTable td").forEach(td=>{
+    td.classList.remove("circle","v-line","d-line");
+  });
 }
 
-function drawMatch(match){
-  const rows = [...document.querySelectorAll("#recordTable tbody tr")];
-
-  match.steps.forEach((step,i)=>{
-    const td = rows[step.row].children[step.col + 1];
+function drawMatch(steps){
+  steps.forEach((s,i)=>{
+    const td=document.querySelectorAll("#recordTable tbody tr")[s.row]
+      .children[s.col+1];
     td.classList.add("circle");
-
-    if(i > 0){
+    if(i>0){
       td.classList.add("v-line");
     }
   });
