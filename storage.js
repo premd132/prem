@@ -1,51 +1,76 @@
 const tbody = document.querySelector("#recordTable tbody");
 
+/* normalize rule */
 function normalize(v){
-  if(!v || v==="**") return null;
-  v=v.trim();
-  if(v.length===1) return "0"+v;
+  if(!v) return "";
+  v = v.trim();
+  if(v === "**") return "";
+  if(/^\d$/.test(v)) return "0" + v;
   return v;
 }
 
-document.getElementById("csvFile").addEventListener("change",e=>{
-  const f=e.target.files[0];
-  if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{
+/* CSV upload */
+document.getElementById("csvFile").addEventListener("change", e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+
+  const reader = new FileReader();
+  reader.onload = ()=>{
     tbody.innerHTML="";
-    r.result.split(/\r?\n/).slice(1).forEach((l,i)=>{
-      if(!l.trim()) return;
-      const c=l.split(",");
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>W${i+1}</td>`+
-        c.slice(0,6).map(v=>`<td>${normalize(v)||""}</td>`).join("");
+    const lines = reader.result.split(/\r?\n/);
+
+    lines.slice(1).forEach((line,i)=>{
+      if(!line.trim()) return;
+      const cols = line.split(",");
+      const tr = document.createElement("tr");
+
+      tr.innerHTML =
+        `<td>W${i+1}</td>` +
+        cols.slice(0,6)
+            .map(v=>`<td>${normalize(v)}</td>`)
+            .join("");
+
       tbody.appendChild(tr);
     });
   };
-  r.readAsText(f);
+  reader.readAsText(file);
 });
 
+/* enable edit */
 function enableEdit(){
   document.querySelectorAll("#recordTable td")
-  .forEach((td,i)=>{ if(i%7!==0){ td.contentEditable=true; td.classList.add("editable") }});
+    .forEach((td,i)=>{
+      if(i % 7 !== 0){
+        td.contentEditable = true;
+        td.classList.add("editable");
+      }
+    });
 }
 
+/* save data */
 function saveData(){
-  const data=[...tbody.querySelectorAll("tr")].map(tr=>
-    [...tr.children].slice(1).map(td=>td.innerText)
-  );
-  localStorage.setItem("record",JSON.stringify(data));
-  alert("Saved");
+  const data = [];
+  document.querySelectorAll("#recordTable tbody tr").forEach(tr=>{
+    data.push(
+      [...tr.children].slice(1)
+        .map(td=>normalize(td.innerText))
+    );
+  });
+  localStorage.setItem("recordData", JSON.stringify(data));
+  alert("Data Saved");
 }
 
-(function load(){
-  const d=JSON.parse(localStorage.getItem("record")||"null");
-  if(!d) return;
+/* load saved */
+(function loadSaved(){
+  const saved = JSON.parse(localStorage.getItem("recordData") || "null");
+  if(!saved) return;
+
   tbody.innerHTML="";
-  d.forEach((r,i)=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>W${i+1}</td>`+
-      r.map(v=>`<td>${v}</td>`).join("");
+  saved.forEach((row,i)=>{
+    const tr = document.createElement("tr");
+    tr.innerHTML =
+      `<td>W${i+1}</td>` +
+      row.map(v=>`<td>${v}</td>`).join("");
     tbody.appendChild(tr);
   });
 })();
