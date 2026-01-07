@@ -1,8 +1,17 @@
 const tbody = document.querySelector("#recordTable tbody");
 
+/* normalize value */
+function norm(v) {
+  v = v.trim();
+  if (v === "**" || v === "") return "";
+  if (/^\d$/.test(v)) return "0" + v;
+  if (/^\d{2}$/.test(v)) return v;
+  return "";
+}
+
 /* CSV split */
 function smartSplit(line) {
-  return line.split(/[,\t;]/).map(v => v.trim()).filter(v => v !== "");
+  return line.split(/[,\t ]+/).map(v => v.trim());
 }
 
 /* CSV LOAD */
@@ -15,25 +24,24 @@ document.getElementById("csvFile").addEventListener("change", e => {
     const lines = reader.result.split(/\r?\n/);
     tbody.innerHTML = "";
 
+    let w = 1;
     for (let i = 1; i < lines.length; i++) {
       if (!lines[i].trim()) continue;
       const cols = smartSplit(lines[i]);
-      const data = cols.length >= 7 ? cols.slice(1, 7) : cols;
-      addRow(data, i);
+      const data = cols.length >= 7 ? cols.slice(1, 7) : cols.slice(0, 6);
+      addRow(data.map(norm), w++);
     }
   };
   reader.readAsText(file);
 });
 
+/* ADD ROW */
 function addRow(values, week) {
   const tr = document.createElement("tr");
-
   tr.innerHTML =
     `<td>W${week}</td>` +
-    values.map(v => `<td>${normalizeJodi(v)}</td>`).join("");
-
+    values.map(v => `<td>${v}</td>`).join("");
   tbody.appendChild(tr);
-}
 }
 
 /* EDIT */
@@ -50,17 +58,14 @@ function enableEdit() {
 function saveData() {
   const data = [];
   document.querySelectorAll("#recordTable tbody tr").forEach(tr => {
-    const row = [...tr.children]
-  .slice(1)
-  .map(td => normalizeJodi(td.innerText.trim()));
-    data.push(row);
+    data.push([...tr.children].slice(1).map(td => norm(td.innerText)));
   });
   localStorage.setItem("recordData", JSON.stringify(data));
   alert("Data Saved");
 }
 
 /* LOAD SAVED */
-(function () {
+(() => {
   const saved = JSON.parse(localStorage.getItem("recordData"));
   if (!saved) return;
   tbody.innerHTML = "";
