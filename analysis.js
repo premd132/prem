@@ -1,74 +1,76 @@
-function runAnalysis() {
-  const rows = Array.from(document.querySelectorAll("#recordTable tbody tr"));
+/* FAMILY LOGIC */
+const FAMILY = [
+  ["11","16","61","66"],
+  ["22","27","72","77"],
+  ["33","38","83","88"],
+  ["44","49","94","99"],
+  ["55","00","05","50"]
+];
 
-  if (rows.length < 10) {
-    alert("At least 10 rows required");
-    return;
-  }
-
-  // ---- helper ----
-  const isValid = v => /^\d{2}$/.test(v);
-
-  // ---- last 10 rows data collect ----
-  const last10 = rows.slice(-10).map(tr =>
-    Array.from(tr.children)
-      .slice(1)
-      .map(td => td.innerText.trim())
-  );
-
-  // ---- check: at least ONE valid value per row ----
-  const usable = last10.every(row =>
-    row.some(v => isValid(v))
-  );
-
-  if (!usable) {
-    alert("Invalid data in last 10 rows");
-    return;
-  }
-
-  // ---- clear old lines ----
-  document.getElementById("checkLines").innerHTML = "";
-
-  // ---- build simple column pattern (base) ----
-  const patterns = [];
-
-  for (let col = 0; col < 6; col++) {
-    const seq = last10
-      .map(r => r[col])
-      .filter(v => isValid(v));
-
-    if (seq.length >= 3) {
-      patterns.push({ col, seq });
-    }
-  }
-
-  if (patterns.length === 0) {
-    alert("No usable pattern found");
-    return;
-  }
-
-  // ---- show check lines ----
-  patterns.forEach((p, idx) => {
-    const div = document.createElement("div");
-    div.className = "check-line";
-    div.innerText = `PATTERN ${idx + 1} | Column ${p.col + 1} | ${p.seq.join(" → ")}`;
-
-    div.onclick = () => toggleHighlight(p.col, p.seq);
-    document.getElementById("checkLines").appendChild(div);
-  });
+function sameFamily(a, b) {
+  return FAMILY.some(f => f.includes(a) && f.includes(b));
 }
 
-// ================= HIGHLIGHT =================
-function toggleHighlight(col, seq) {
-  const rows = Array.from(document.querySelectorAll("#recordTable tbody tr"));
+/* RUN ANALYSIS */
+function runAnalysis() {
+  document.getElementById("checkLines").innerHTML = "";
 
-  rows.forEach(tr => {
-    const td = tr.children[col + 1];
+  const rows = [...document.querySelectorAll("#recordTable tbody tr")];
+  if (rows.length < 10) return alert("At least 10 rows required");
+
+  const data = rows.map(r =>
+    [...r.children].slice(1).map(td => td.innerText.trim())
+  );
+
+  const last10 = data.slice(-10);
+
+  const patterns = [];
+
+  /* COLUMN */
+  for (let c = 0; c < 6; c++) {
+    const seq = last10.map(r => r[c]).filter(v => v);
+    if (seq.length >= 3) patterns.push({type:"Column", c, seq});
+  }
+
+  /* DIAGONAL */
+  for (let c = 0; c < 5; c++) {
+    const seq = last10.map((r,i)=> r[c+i] || "").filter(v=>v);
+    if (seq.length >= 3) patterns.push({type:"Diagonal", c, seq});
+  }
+
+  /* FAMILY */
+  for (let c = 0; c < 6; c++) {
+    let fam = [];
+    for (let i=1;i<last10.length;i++) {
+      if (sameFamily(last10[i-1][c], last10[i][c])) {
+        fam.push(last10[i][c]);
+      }
+    }
+    if (fam.length>=2) patterns.push({type:"Family", c, seq:fam});
+  }
+
+  patterns.forEach((p,i)=>addCheckLine(p,i));
+}
+
+/* CHECK LINE */
+function addCheckLine(p,i) {
+  const div = document.createElement("div");
+  div.className = "check-line";
+  div.innerText = `Pattern ${i+1} (${p.type})`;
+  div.onclick = ()=>togglePattern(p,div);
+  document.getElementById("checkLines").appendChild(div);
+}
+
+/* TOGGLE */
+function togglePattern(p, div) {
+  div.classList.toggle("active");
+
+  document.querySelectorAll("#recordTable tbody tr").forEach((tr,r)=>{
+    const td = tr.children[p.c+1];
     if (!td) return;
-
-    if (seq.includes(td.innerText.trim())) {
+    if (p.seq.includes(td.innerText)) {
       td.classList.toggle("circle");
-      td.classList.toggle("connect-top");
+      td.classList.toggle("connect");
     }
   });
 }
