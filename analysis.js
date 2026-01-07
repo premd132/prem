@@ -1,125 +1,74 @@
-function normalizeJodi(val) {
-  if (!val) return null;
-  if (val === "**") return null;
+function runAnalysis() {
+  const rows = Array.from(document.querySelectorAll("#recordTable tbody tr"));
 
-  val = val.toString().trim();
-
-  // single digit → add 0
-  if (/^\d$/.test(val)) {
-    return "0" + val;
-  }
-
-  // already 2 digit
-  if (/^\d{2}$/.test(val)) {
-    return val;
-  }
-
-  return null; // invalid ignore
-}
-console.log("FINAL FIX analysis.js loaded");
-
-const FAMILIES = [
-  ["11","16","61","66"],
-  ["22","27","72","77"],
-  ["33","38","83","88"],
-  ["44","49","94","99"],
-  ["55","00","05","50"]
-];
-
-// ---------- HELPERS ----------
-function normalize(v){
-  if(!v || v==="**") return null;
-  return v.toString().padStart(2,"0");
-}
-
-function familyKey(num){
-  num = normalize(num);
-  if(!num) return null;
-  for(let i=0;i<FAMILIES.length;i++){
-    if(FAMILIES[i].includes(num)) return "F"+i;
-  }
-  return null;
-}
-
-// ---------- MAIN ----------
-function runAnalysis(){
-  const rows = [...document.querySelectorAll("#recordTable tbody tr")];
-  const checkLines = document.getElementById("checkLines");
-  checkLines.innerHTML = "";
-
-  // clear old visuals
-  document.querySelectorAll("td").forEach(td=>{
-    td.classList.remove("circle","connect-top");
-  });
-
-  if(rows.length < 10){
-    alert("Minimum 10 rows required");
+  if (rows.length < 10) {
+    alert("At least 10 rows required");
     return;
   }
 
-  // ===== BUILD LAST 10 PATTERN (Mon column) =====
-  const last10Start = rows.length - 10;
-  const basePattern = [];
+  // ---- helper ----
+  const isValid = v => /^\d{2}$/.test(v);
 
-  for(let i=0;i<10;i++){
-    const td = rows[last10Start+i].children[1];
-    const key = familyKey(td.innerText.trim());
-    if(!key){
-      alert("Invalid data in last 10 rows");
-      return;
-    }
-    basePattern.push(key);
+  // ---- last 10 rows data collect ----
+  const last10 = rows.slice(-10).map(tr =>
+    Array.from(tr.children)
+      .slice(1)
+      .map(td => td.innerText.trim())
+  );
+
+  // ---- check: at least ONE valid value per row ----
+  const usable = last10.every(row =>
+    row.some(v => isValid(v))
+  );
+
+  if (!usable) {
+    alert("Invalid data in last 10 rows");
+    return;
   }
 
-  const patternString = basePattern.join("|");
+  // ---- clear old lines ----
+  document.getElementById("checkLines").innerHTML = "";
 
-  // ===== SEARCH FULL RECORD =====
-  for(let r=0; r<=rows.length-10; r++){
-    const seq = [];
-    let ok = true;
+  // ---- build simple column pattern (base) ----
+  const patterns = [];
 
-    for(let i=0;i<10;i++){
-      const td = rows[r+i].children[1];
-      const key = familyKey(td.innerText.trim());
-      if(!key){
-        ok = false;
-        break;
-      }
-      seq.push(key);
-    }
+  for (let col = 0; col < 6; col++) {
+    const seq = last10
+      .map(r => r[col])
+      .filter(v => isValid(v));
 
-    if(ok && seq.join("|") === patternString){
-      createCheckLine(r);
+    if (seq.length >= 3) {
+      patterns.push({ col, seq });
     }
   }
+
+  if (patterns.length === 0) {
+    alert("No usable pattern found");
+    return;
+  }
+
+  // ---- show check lines ----
+  patterns.forEach((p, idx) => {
+    const div = document.createElement("div");
+    div.className = "check-line";
+    div.innerText = `PATTERN ${idx + 1} | Column ${p.col + 1} | ${p.seq.join(" → ")}`;
+
+    div.onclick = () => toggleHighlight(p.col, p.seq);
+    document.getElementById("checkLines").appendChild(div);
+  });
 }
 
-// ---------- CHECK LINE ----------
-function createCheckLine(startRow){
-  const div = document.createElement("div");
-  div.className = "check-line";
-  div.innerText = "MATCH @ W" + (startRow+1);
+// ================= HIGHLIGHT =================
+function toggleHighlight(col, seq) {
+  const rows = Array.from(document.querySelectorAll("#recordTable tbody tr"));
 
-  let active = false;
+  rows.forEach(tr => {
+    const td = tr.children[col + 1];
+    if (!td) return;
 
-  div.onclick = ()=>{
-    active = !active;
-
-    // remove all
-    document.querySelectorAll("td").forEach(td=>{
-      td.classList.remove("circle","connect-top");
-    });
-
-    if(!active) return;
-
-    for(let i=0;i<10;i++){
-      const td = document.querySelectorAll("#recordTable tbody tr")[startRow+i].children[1];
-      td.classList.add("circle");
-      if(i>0) td.classList.add("connect-top");
+    if (seq.includes(td.innerText.trim())) {
+      td.classList.toggle("circle");
+      td.classList.toggle("connect-top");
     }
-  };
-
-  document.getElementById("checkLines").appendChild(div);
+  });
 }
-
-window.runAnalysis = runAnalysis;
