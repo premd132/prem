@@ -1,3 +1,21 @@
+function normalizeJodi(val) {
+  if (!val) return null;
+  if (val === "**") return null;
+
+  val = val.toString().trim();
+
+  // single digit → add 0
+  if (/^\d$/.test(val)) {
+    return "0" + val;
+  }
+
+  // already 2 digit
+  if (/^\d{2}$/.test(val)) {
+    return val;
+  }
+
+  return null; // invalid ignore
+}
 console.log("FINAL FIX analysis.js loaded");
 
 const FAMILIES = [
