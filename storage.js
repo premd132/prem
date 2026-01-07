@@ -1,49 +1,58 @@
-const tbody=document.querySelector("#recordTable tbody");
+const tbody = document.querySelector("#recordTable tbody");
 
-function smartSplit(l){
-  return l.split(/[,\t ]+/).map(v=>v.trim());
+function pad(v){
+  if(v==="**" || v==="") return null;
+  v = v.trim();
+  if(v.length===1) return "0"+v;
+  return v;
 }
 
-document.getElementById("csvFile").addEventListener("change",e=>{
-  const f=e.target.files[0]; if(!f) return;
-  const r=new FileReader();
-  r.onload=()=>{
+document.getElementById("csvFile").addEventListener("change", e=>{
+  const file = e.target.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = ()=>{
+    const lines = reader.result.split(/\r?\n/);
     tbody.innerHTML="";
-    const lines=r.result.split(/\r?\n/);
-    let w=1;
     for(let i=1;i<lines.length;i++){
-      if(!lines[i]) continue;
-      const c=smartSplit(lines[i]);
-      addRow(c.slice(1,7),w++);
+      if(!lines[i].trim()) continue;
+      const cols = lines[i].split(",");
+      const tr = document.createElement("tr");
+      tr.innerHTML =
+        `<td>W${i}</td>`+
+        cols.slice(0,6).map(v=>`<td>${pad(v)??""}</td>`).join("");
+      tbody.appendChild(tr);
     }
   };
-  r.readAsText(f);
+  reader.readAsText(file);
 });
 
-function addRow(vals,w){
-  const tr=document.createElement("tr");
-  tr.innerHTML=`<td>W${w}</td>`+vals.map(v=>`<td>${normalize(v)||""}</td>`).join("");
-  tbody.appendChild(tr);
-}
-
 function enableEdit(){
- document.querySelectorAll("#recordTable td").forEach((td,i)=>{
-   if(i%7!==0){td.contentEditable=true;td.classList.add("editable");}
- });
+  document.querySelectorAll("#recordTable td")
+    .forEach((td,i)=>{
+      if(i%7!==0){
+        td.contentEditable=true;
+        td.classList.add("editable");
+      }
+    });
 }
 
 function saveData(){
- const d=[];
- document.querySelectorAll("#recordTable tbody tr").forEach(tr=>{
-  d.push([...tr.children].slice(1).map(td=>normalize(td.innerText)));
- });
- localStorage.setItem("data",JSON.stringify(d));
- alert("Saved");
+  const data=[];
+  document.querySelectorAll("#recordTable tbody tr").forEach(tr=>{
+    data.push([...tr.children].slice(1).map(td=>td.innerText.trim()));
+  });
+  localStorage.setItem("recordData",JSON.stringify(data));
+  alert("Saved");
 }
 
-(()=>{
- const s=JSON.parse(localStorage.getItem("data"));
- if(!s) return;
- tbody.innerHTML="";
- s.forEach((r,i)=>addRow(r,i+1));
+(function(){
+  const saved=JSON.parse(localStorage.getItem("recordData"));
+  if(!saved) return;
+  tbody.innerHTML="";
+  saved.forEach((row,i)=>{
+    const tr=document.createElement("tr");
+    tr.innerHTML=`<td>W${i+1}</td>`+row.map(v=>`<td>${v}</td>`).join("");
+    tbody.appendChild(tr);
+  });
 })();
