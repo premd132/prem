@@ -1,45 +1,82 @@
-const tbody=document.querySelector("#recordTable tbody");
+const tbody = document.querySelector("#recordTable tbody");
 
-document.getElementById("csvFile").addEventListener("change",e=>{
-  const file=e.target.files[0];
-  if(!file) return;
-  const r=new FileReader();
-  r.onload=()=>{
-    tbody.innerHTML="";
-    r.result.split(/\r?\n/).forEach((line,i)=>{
-      if(!line.trim()) return;
-      const cols=line.split(",");
-      const tr=document.createElement("tr");
-      tr.innerHTML=`<td>W${i+1}</td>`+
-        cols.map(v=>`<td>${normalize(v.trim())||""}</td>`).join("");
+// CSV UPLOAD
+document.getElementById("csvFile").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    tbody.innerHTML = "";
+
+    const lines = reader.result.split(/\r?\n/);
+
+    lines.forEach((line, i) => {
+      if (!line.trim()) return;
+
+      const cols = line.split(",").map(v => v.trim());
+      if (cols.length < 6) return;
+
+      const tr = document.createElement("tr");
+
+      // Week column
+      const weekTd = document.createElement("td");
+      weekTd.innerText = "W" + (i + 1);
+      tr.appendChild(weekTd);
+
+      // Mon–Sat
+      for (let j = 0; j < 6; j++) {
+        const td = document.createElement("td");
+        td.innerText = normalize(cols[j]);
+        tr.appendChild(td);
+      }
+
       tbody.appendChild(tr);
     });
+
+    saveData();
   };
-  r.readAsText(file);
+
+  reader.readAsText(file);
 });
 
-function enableEdit(){
-  document.querySelectorAll("#recordTable td").forEach((td,i)=>{
-    if(i%7!==0) td.contentEditable=true;
+// EDIT
+function enableEdit() {
+  document.querySelectorAll("#recordTable td").forEach((td, i) => {
+    if (i % 7 !== 0) td.contentEditable = true;
   });
 }
 
-function saveData(){
-  const data=[];
-  document.querySelectorAll("#recordTable tbody tr").forEach(tr=>{
-    data.push([...tr.children].slice(1).map(td=>td.innerText.trim()));
+// SAVE
+function saveData() {
+  const data = [];
+  document.querySelectorAll("#recordTable tbody tr").forEach(tr => {
+    const row = [];
+    [...tr.children].slice(1).forEach(td => row.push(td.innerText.trim()));
+    data.push(row);
   });
-  localStorage.setItem("record",JSON.stringify(data));
-  alert("Saved");
+  localStorage.setItem("record", JSON.stringify(data));
 }
 
-(function load(){
-  const saved=JSON.parse(localStorage.getItem("record")||"null");
-  if(!saved) return;
-  saved.forEach((row,i)=>{
-    const tr=document.createElement("tr");
-    tr.innerHTML=`<td>W${i+1}</td>`+
-      row.map(v=>`<td>${v}</td>`).join("");
+// LOAD ON PAGE OPEN
+(function load() {
+  const saved = JSON.parse(localStorage.getItem("record") || "null");
+  if (!saved) return;
+
+  tbody.innerHTML = "";
+  saved.forEach((row, i) => {
+    const tr = document.createElement("tr");
+
+    const w = document.createElement("td");
+    w.innerText = "W" + (i + 1);
+    tr.appendChild(w);
+
+    row.forEach(v => {
+      const td = document.createElement("td");
+      td.innerText = normalize(v);
+      tr.appendChild(td);
+    });
+
     tbody.appendChild(tr);
   });
 })();
