@@ -4,103 +4,94 @@ function clearDraw() {
   });
 }
 
-function getRows() {
+function rows() {
   return [...document.querySelectorAll("#recordTable tbody tr")];
 }
 
 /* =========================
-   STEP 1: BUILD FLOW TEMPLATE
+   STEP 1: BUILD COLUMN PATTERNS
    ========================= */
-function buildFlowTemplate() {
-  const rows = getRows();
-  const last = rows.slice(-7);
-  const template = [];
+function buildColumnTemplates() {
+  const r = rows();
+  const last = r.slice(-6);
+  const templates = [];
 
-  last.forEach((row, i) => {
-    for (let col = 1; col <= 6; col++) {
+  for (let col = 1; col <= 6; col++) {
+    const famSeq = [];
+    last.forEach(row => {
       const val = row.children[col].innerText.trim();
       const fam = getFamily(val);
-      if (fam) {
-        template.push({
-          step: i,
-          col,
-          fam
-        });
-        break; // ✅ ek row se sirf ek value
-      }
-    }
-  });
+      if (fam) famSeq.push(fam);
+    });
 
-  return template.length >= 4 ? template : null;
+    if (famSeq.length >= 4) {
+      templates.push({ col, famSeq });
+    }
+  }
+  return templates;
 }
 
 /* =========================
    STEP 2: SCAN FULL RECORD
    ========================= */
-function scanFullRecord(template) {
-  const rows = getRows();
-  const matches = [];
+function scanAll(templates) {
+  const r = rows();
+  const results = [];
 
-  for (let r = 0; r <= rows.length - template.length; r++) {
-    let ok = true;
-    const steps = [];
+  templates.forEach(tpl => {
+    for (let i = 0; i <= r.length - tpl.famSeq.length; i++) {
+      let ok = true;
+      const steps = [];
 
-    template.forEach((t, i) => {
-      const td = rows[r + i].children[t.col];
-      const fam = getFamily(td.innerText.trim());
-      if (!fam || fam !== t.fam) {
-        ok = false;
-      } else {
-        steps.push({ row: r + i, col: t.col });
-      }
-    });
+      tpl.famSeq.forEach((fam, j) => {
+        const td = r[i + j].children[tpl.col];
+        if (getFamily(td.innerText.trim()) !== fam) {
+          ok = false;
+        } else {
+          steps.push({ row: i + j, col: tpl.col });
+        }
+      });
 
-    if (ok) matches.push(steps);
-  }
+      if (ok) results.push({ col: tpl.col, steps });
+    }
+  });
 
-  return matches;
+  return results;
 }
 
 /* =========================
    STEP 3: DRAW
    ========================= */
-function drawMatch(steps) {
+function draw(steps) {
   clearDraw();
   steps.forEach((s, i) => {
-    const td = getRows()[s.row].children[s.col];
+    const td = rows()[s.row].children[s.col];
     td.classList.add("circle");
     if (i > 0) td.classList.add("line");
   });
 }
 
 /* =========================
-   STEP 4: RUN ANALYSIS
+   STEP 4: RUN
    ========================= */
 function runAnalysis() {
   clearDraw();
   const box = document.getElementById("checkLines");
   box.innerHTML = "";
 
-  const template = buildFlowTemplate();
-  if (!template) {
-    box.innerHTML = "<i>No base pattern in last rows</i>";
+  const templates = buildColumnTemplates();
+  const results = scanAll(templates);
+
+  if (!results.length) {
+    box.innerHTML = "<i>No family pattern found</i>";
     return;
   }
 
-  const matches = scanFullRecord(template);
-  if (!matches.length) {
-    box.innerHTML = "<i>No matching pattern found</i>";
-    return;
-  }
-
-  matches.forEach((m, i) => {
-    const div = document.createElement("div");
-    div.className = "check-line";
-    div.innerText = `Pattern ${i + 1} | Family Flow`;
-    div.onclick = () => {
-      drawMatch(m);
-      div.classList.toggle("active");
-    };
-    box.appendChild(div);
+  results.forEach((res, i) => {
+    const d = document.createElement("div");
+    d.className = "check-line";
+    d.innerText = `Pattern ${i + 1} | Column ${res.col}`;
+    d.onclick = () => draw(res.steps);
+    box.appendChild(d);
   });
 }
