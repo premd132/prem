@@ -1,82 +1,36 @@
-body {
-  font-family: Arial, sans-serif;
-  padding: 10px;
+body{
+  font-family: Arial;
+  padding:10px;
 }
 
-table {
+table{
   border-collapse: collapse;
-  width: 100%;
+  width:100%;
 }
 
-th, td {
-  border: 1px solid #ccc;
-  padding: 6px;
-  text-align: center;
-  position: relative;
+th,td{
+  border:1px solid #ccc;
+  padding:5px;
+  text-align:center;
 }
 
-.editable {
-  background: #eef;
+.controls button{
+  margin:4px;
+  padding:6px 10px;
 }
 
-td.circle::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 22px;
-  height: 22px;
-  border: 3px solid red;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
+.circle{
+  border:2px solid red;
+  border-radius:50%;
 }
 
-td.v-line::before {
-  content: "";
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  width: 3px;
-  height: 18px;
-  background: red;
-  transform: translateX(-50%);
+.v-line{
+  border-left:3px solid red;
 }
 
-.check-line {
-  background: #eaffea;
-  padding: 6px;
-  margin: 4px 0;
-  border-left: 5px solid green;
-  cursor: pointer;
-  /* ===== PATTERN DRAWING ===== */
-
-.circle {
-  position: relative;
+.check-line{
+  background:#e8f7e8;
+  margin:4px 0;
+  padding:6px;
+  cursor:pointer;
 }
-
-.circle::after {
-  content: "";
-  position: absolute;
-  top: 50%;
-  left: 50%;
-  width: 22px;
-  height: 22px;
-  border: 3px solid red;
-  border-radius: 50%;
-  transform: translate(-50%, -50%);
-  pointer-events: none;
-}
-
-.v-line::before {
-  content: "";
-  position: absolute;
-  top: -18px;
-  left: 50%;
-  width: 3px;
-  height: 18px;
-  background: red;
-  transform: translateX(-50%);
-}
-}
-
