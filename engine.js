@@ -12,6 +12,9 @@ function getLastValidRows(count){
 
 function runStep4(){
   clearDrawing();
+  function runEngine(){
+  runStep4();
+  }
   const out=document.getElementById("checkLines");
   out.innerHTML="";
 
