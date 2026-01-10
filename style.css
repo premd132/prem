@@ -1,36 +1,15 @@
-body{
-  font-family: Arial;
-  padding:10px;
-}
+table { border-collapse: collapse; width: 100%; font-size: 12px; }
+td,th { border:1px solid #ccc; padding:4px; text-align:center; }
 
-table{
-  border-collapse: collapse;
-  width:100%;
-}
-
-th,td{
-  border:1px solid #ccc;
-  padding:5px;
-  text-align:center;
-}
-
-.controls button{
-  margin:4px;
-  padding:6px 10px;
-}
-
-.circle{
-  border:2px solid red;
-  border-radius:50%;
-}
-
-.v-line{
-  border-left:3px solid red;
-}
+.circle { border:2px solid red; border-radius:50%; }
+.line { border-left:3px solid red; }
 
 .check-line{
-  background:#e8f7e8;
+  background:#eaffea;
   margin:4px 0;
   padding:6px;
   cursor:pointer;
 }
+.check-line.active{ background:#c6ffc6; }
+
+.editable{ background:#fff7cc; }
