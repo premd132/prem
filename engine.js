@@ -1,122 +1,78 @@
-const tbody=document.querySelector("#recordTable tbody");
+const tbody = document.querySelector("#recordTable tbody");
 
-/* ---------- FAMILY ---------- */
-function normalize(v){
- if(!v||v=="**") return null;
- return v.toString().padStart(2,"0");
-}
-function getFamily(v){
- if(!v) return null;
- const f={
- "0":["00","05","50","55"],
- "1":["11","16","61","66"],
- "2":["22","27","72","77"],
- "3":["33","38","83","88"],
- "4":["44","49","94","99"]
- };
- return f[v[0]]||[v];
-}
-
-/* ---------- CSV LOAD ---------- */
-document.getElementById("csvFile").addEventListener("change",e=>{
- const f=e.target.files[0]; if(!f) return;
- const r=new FileReader();
- r.onload=()=>{
-  tbody.innerHTML="";
-  r.result.split(/\r?\n/).forEach((l,i)=>{
-   if(!l.trim()) return;
-   const c=l.split(",");
-   const tr=document.createElement("tr");
-   tr.innerHTML=`<td>W${i+1}</td>`+c.map(v=>`<td>${normalize(v)||""}</td>`).join("");
-   tbody.appendChild(tr);
-  });
- };
- r.readAsText(f);
+document.getElementById("csvFile").addEventListener("change", e => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const r = new FileReader();
+  r.onload = () => loadCSV(r.result);
+  r.readAsText(file);
 });
 
-/* ---------- EDIT + SAVE ---------- */
-function enableEdit(){
- document.querySelectorAll("#recordTable td").forEach((td,i)=>{
-  if(i%7!=0){ td.contentEditable=true; td.classList.add("editable"); }
- });
-}
-function saveData(){
- const data=[];
- document.querySelectorAll("#recordTable tbody tr").forEach(tr=>{
-  data.push([...tr.children].slice(1).map(td=>td.innerText.trim()));
- });
- localStorage.setItem("record",JSON.stringify(data));
- alert("Saved");
-}
-(function load(){
- const d=JSON.parse(localStorage.getItem("record")||"null");
- if(!d) return;
- tbody.innerHTML="";
- d.forEach((row,i)=>{
-  const tr=document.createElement("tr");
-  tr.innerHTML=`<td>W${i+1}</td>`+row.map(v=>`<td>${v}</td>`).join("");
-  tbody.appendChild(tr);
- });
-})();
-
-/* ---------- DRAW ---------- */
-function clearDraw(){
- document.querySelectorAll("#recordTable td")
- .forEach(td=>td.classList.remove("circle","line"));
-}
-function draw(match){
- clearDraw();
- match.forEach((s,i)=>{
-  const td=tbody.children[s.row].children[s.col];
-  td.classList.add("circle");
-  if(i>0) td.classList.add("line");
- });
-}
-
-/* ---------- ENGINE ---------- */
-function runEngine(){
- clearDraw();
- const rows=[...tbody.children];
- if(rows.length<6){ alert("Minimum 6 rows"); return; }
-
- const last=rows.slice(-6);
- const templates=[];
-
- for(let col=1;col<=6;col++){
-  const famSeq=[];
-  last.forEach((r,i)=>{
-   const v=normalize(r.children[col].innerText);
-   famSeq.push({fam:getFamily(v),row:i,col});
+function loadCSV(text){
+  tbody.innerHTML = "";
+  text.split(/\r?\n/).forEach(line=>{
+    if(!line.trim()) return;
+    const cols = line.split(",");
+    const tr = document.createElement("tr");
+    cols.forEach(c=>{
+      const td = document.createElement("td");
+      td.textContent = c.trim();
+      tr.appendChild(td);
+    });
+    tbody.appendChild(tr);
   });
-  templates.push(famSeq);
- }
+}
 
- const results=[];
- templates.forEach((tpl,tIndex)=>{
-  for(let r=0;r<=rows.length-6;r++){
-   let ok=true,found=[];
-   for(let i=0;i<6;i++){
-    const td=rows[r+i].children[tpl[i].col];
-    const fam=getFamily(normalize(td.innerText));
-    if(!fam||!tpl[i].fam.some(x=>fam.includes(x))) ok=false;
-    else found.push({row:r+i,col:tpl[i].col});
-   }
-   if(ok) results.push({name:`Pattern ${results.length+1} | Column ${tpl[0].col}`,found});
-  }
- });
-
- const box=document.getElementById("checkLines");
- box.innerHTML="";
- if(!results.length){ box.innerHTML="<i>No family pattern found</i>"; return; }
-
- results.forEach(r=>{
-  const d=document.createElement("div");
-  d.className="check-line";
-  d.innerText=r.name;
-  d.onclick=()=>{
-   const a=d.classList.toggle("active");
-   if(a) draw(r.found); else clearDraw();
+function getFamily(v){
+  if(v=="**") return null;
+  v = v.padStart(2,"0");
+  const map = {
+    "0":["00","05","50","55"],
+    "1":["11","16","61","66"],
+    "2":["22","27","72","77"],
+    "3":["33","38","83","88"],
+    "4":["44","49","94","99"]
   };
-  box.appendChild(d);
- });
+  for(let k in map){
+    if(map[k].includes(v)) return k;
+  }
+  return null;
+}
+
+function clearDraw(){
+  document.querySelectorAll("td").forEach(td=>{
+    td.classList.remove("circle","v-line");
+  });
+}
+
+function runAnalysis(){
+  clearDraw();
+  const rows = [...tbody.querySelectorAll("tr")];
+  if(rows.length<5) return;
+
+  let found=false;
+  let last5 = rows.slice(-5);
+
+  for(let col=1;col<=6;col++){
+    const fams = last5.map(r=>{
+      const td=r.children[col];
+      return getFamily(td.textContent.trim());
+    });
+
+    if(fams.every(f=>f!==null && f===fams[0])){
+      found=true;
+      last5.forEach((r,i)=>{
+        const td=r.children[col];
+        td.classList.add("circle");
+        if(i>0) td.classList.add("v-line");
+      });
+      document.getElementById("result").innerHTML =
+        "Pattern Found in Column "+col+" | Family "+fams[0];
+      break;
+    }
+  }
+
+  if(!found){
+    document.getElementById("result").innerHTML="No pattern found";
+  }
 }
