@@ -21,7 +21,7 @@ function runAnalysis(){
 
   let checkNo = 1;
 
-  for(let col=1; col<=6; col++){
+  for(let c=0;c<cols;c++)
     let fams = last.map(r => getFamily(r.children[col].innerText.trim()));
     let used = {};
 
