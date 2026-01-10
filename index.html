@@ -96,7 +96,11 @@ function runAnalysis(){
   const rows=[...table.rows].slice(1); // skip header
   if(rows.length<4){ alert("कम से कम 4 rows चाहिए"); return; }
 
-  const last4 = rows.slice(-4);
+  // get last 4 rows which are not all "**"
+const validRows = rows.filter(r=>{
+  return [...r.cells].some(td=>td.innerText.trim()!=="**" && td.innerText.trim()!=="");
+});
+const last4 = validRows.slice(-4);
   const cols = rows[0].cells.length;
   const patterns=[]; // {col, rows:[idxs], rule}
 
