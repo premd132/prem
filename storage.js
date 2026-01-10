@@ -1,43 +1,50 @@
-const tbody=document.querySelector("#recordTable tbody");
+const tbody = document.querySelector("#recordTable tbody");
 
-document.getElementById("csvFile").addEventListener("change",e=>{
-  const file=e.target.files[0];
+document.getElementById("csvFile").addEventListener("change", e=>{
+  const file = e.target.files[0];
   if(!file) return;
-  const r=new FileReader();
-  r.onload=()=>{
+  const reader = new FileReader();
+  reader.onload = ()=>{
     tbody.innerHTML="";
-    r.result.split(/\r?\n/).forEach(l=>{
-      if(!l.trim()) return;
-      const c=l.split(",");
+    reader.result.split(/\r?\n/).forEach((line,i)=>{
+      if(!line.trim()) return;
+      const cols=line.split(",");
       const tr=document.createElement("tr");
-      tr.innerHTML=c.map(v=>`<td>${normalize(v.trim())||""}</td>`).join("");
+      tr.innerHTML=`<td>W${i+1}</td>`+
+        cols.map(v=>`<td>${v.trim()}</td>`).join("");
       tbody.appendChild(tr);
     });
   };
-  r.readAsText(file);
+  reader.readAsText(file);
 });
 
 function enableEdit(){
-  document.querySelectorAll("#recordTable td")
-    .forEach(td=>{td.contentEditable=true;td.classList.add("editable")});
+  document.querySelectorAll("#recordTable td").forEach((td,i)=>{
+    if(i%7!==0){
+      td.contentEditable=true;
+      td.classList.add("editable");
+    }
+  });
 }
 
 function saveData(){
   const data=[];
   document.querySelectorAll("#recordTable tbody tr").forEach(tr=>{
-    data.push([...tr.children].map(td=>td.innerText.trim()));
+    const row=[...tr.children].slice(1).map(td=>td.innerText.trim());
+    data.push(row);
   });
   localStorage.setItem("record",JSON.stringify(data));
   alert("Saved");
 }
 
 (function load(){
-  const d=JSON.parse(localStorage.getItem("record")||"null");
-  if(!d) return;
+  const saved=JSON.parse(localStorage.getItem("record")||"null");
+  if(!saved) return;
   tbody.innerHTML="";
-  d.forEach(r=>{
+  saved.forEach((row,i)=>{
     const tr=document.createElement("tr");
-    tr.innerHTML=r.map(v=>`<td>${v}</td>`).join("");
+    tr.innerHTML=`<td>W${i+1}</td>`+
+      row.map(v=>`<td>${v}</td>`).join("");
     tbody.appendChild(tr);
   });
 })();
