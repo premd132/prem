@@ -1,31 +1,14 @@
-table {
-  border-collapse: collapse;
-  width: 100%;
-  font-size: 12px;
-}
-
-th, td {
-  border: 1px solid #ccc;
-  text-align: center;
-  padding: 4px;
-}
-
-.editable {
-  background: #fff9c4;
-}
+table { border-collapse: collapse; font-size: 12px; }
+th, td { padding: 4px; text-align: center; }
 
 .circle {
   border: 2px solid red;
   border-radius: 50%;
 }
 
-.line {
-  border-left: 3px solid red;
-}
-
 .check-line {
-  background: #e8f5e9;
-  margin: 4px 0;
-  padding: 6px;
-  cursor: pointer;
+  background:#eaffea;
+  margin:4px;
+  padding:4px;
+  cursor:pointer;
 }
