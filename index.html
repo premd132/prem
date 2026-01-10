@@ -1,33 +1,119 @@
 <!DOCTYPE html>
 <html>
 <head>
-  <meta charset="UTF-8">
-  <title>Family Pattern Analyzer</title>
-  <link rel="stylesheet" href="style.css">
+<meta charset="UTF-8">
+<title>Family Pattern Analyzer</title>
+<style>
+body{font-family:Arial;}
+table{border-collapse:collapse;font-size:12px;}
+td,th{border:1px solid #999;padding:4px;text-align:center;min-width:40px;}
+.circle{border:3px solid red;border-radius:50%;}
+#checkLines{margin-top:15px;background:#eaffea;padding:10px;}
+.line{margin:4px 0;}
+</style>
 </head>
 <body>
 
-<h2>Mon–Sat Pattern Analyzer</h2>
-
-<input type="file" id="csvFile" accept=".csv">
+<h2>Family Pattern Analyzer</h2>
+<input type="file" id="csvFile">
 <button onclick="runAnalysis()">Run Analysis</button>
 
-<table id="recordTable" border="1">
-  <thead>
-    <tr>
-      <th>Week</th>
-      <th>Mon</th><th>Tue</th><th>Wed</th>
-      <th>Thu</th><th>Fri</th><th>Sat</th>
-    </tr>
-  </thead>
-  <tbody></tbody>
-</table>
+<table id="recordTable"></table>
 
 <h3>✔ Check Lines</h3>
 <div id="checkLines"></div>
 
-<script src="storage.js"></script>
-<script src="family.js"></script>
-<script src="engine.js"></script>
+<script>
+const families = {
+"12":["12","17","21","26","62","67","71","76"],
+"13":["13","18","31","36","63","68","81","86"],
+"14":["14","19","41","46","64","69","91","96"],
+"15":["01","06","10","15","51","56","60","65"],
+"23":["23","28","32","37","73","78","82","87"],
+"24":["24","29","42","47","74","79","92","97"],
+"25":["02","07","20","25","52","57","70","75"],
+"34":["34","39","43","48","84","89","93","98"],
+"35":["03","08","30","35","53","58","80","85"],
+"45":["04","09","40","45","54","59","90","95"],
+"HR":["05","16","27","38","49","50","61","72","83","94"],
+"FR":["00","11","22","33","44","55","66","77","88","99"]
+};
+
+function getFamily(num){
+ for(let f in families){
+  if(families[f].includes(num)) return f;
+ }
+ return null;
+}
+
+document.getElementById("csvFile").addEventListener("change",e=>{
+ const file=e.target.files[0];
+ const r=new FileReader();
+ r.onload=()=>{
+  const rows=r.result.trim().split("\n").map(r=>r.split(","));
+  drawTable(rows);
+ }
+ r.readAsText(file);
+});
+
+function drawTable(data){
+ const t=document.getElementById("recordTable");
+ t.innerHTML="";
+ data.forEach((r,i)=>{
+  const tr=document.createElement("tr");
+  r.forEach(c=>{
+   const td=document.createElement(i==0?"th":"td");
+   td.innerText=c.trim();
+   tr.appendChild(td);
+  });
+  t.appendChild(tr);
+ });
+}
+
+function clearCircles(){
+ document.querySelectorAll(".circle").forEach(e=>e.classList.remove("circle"));
+}
+
+function runAnalysis(){
+ clearCircles();
+ const table=document.getElementById("recordTable");
+ const rows=[...table.rows].slice(1); // skip header
+ if(rows.length<4) return;
+
+ const last4=rows.slice(-4);
+ const checks=[];
+ const cols=rows[0].cells.length;
+
+ for(let c=1;c<cols;c++){ // skip week col
+  const fams=[];
+  last4.forEach(r=>{
+   const v=r.cells[c].innerText.trim();
+   fams.push(getFamily(v));
+  });
+  const repeat=fams.find(f=>f && fams.filter(x=>x==f).length>=2);
+  if(repeat){
+   last4.forEach((r,i)=>{
+    if(getFamily(r.cells[c].innerText.trim())==repeat){
+     r.cells[c].classList.add("circle");
+    }
+   });
+   checks.push(`Column ${c} | Family ${repeat} repeated in last 4 rows`);
+  }
+ }
+
+ const cl=document.getElementById("checkLines");
+ cl.innerHTML="";
+ if(checks.length==0){
+  cl.innerHTML="<div>No family repeat in last 4 rows</div>";
+ }else{
+  checks.forEach((t,i)=>{
+   const d=document.createElement("div");
+   d.className="line";
+   d.innerText=`Check ${i+1}: ${t}`;
+   cl.appendChild(d);
+  });
+ }
+}
+</script>
 </body>
 </html>
