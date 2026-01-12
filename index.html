@@ -17,6 +17,14 @@ td,th{border:1px solid #999;padding:4px;text-align:center}
 <table id="tbl"></table>
 
 <h4>✔ Check Lines</h4>
+ <div id="popup" style="display:none;
+ position:fixed;left:0;top:0;right:0;bottom:0;
+ background:rgba(0,0,0,.5);">
+  <div style="background:#fff;margin:40px;padding:10px;max-height:80%;overflow:auto">
+    <button onclick="closePop()">Close</button>
+    <div id="popData"></div>
+  </div>
+ </div>
 <div id="checks">No pattern yet</div>
 
 <script>
@@ -102,6 +110,7 @@ function matchCell(val,rule){
 
 function searchPattern(rule){
  let found=0;
+ lastMatches=[];
  for(let c=0;c<6;c++){
   for(let r=0;r<=data.length-4;r++){
     let ok=true;
@@ -111,6 +120,12 @@ function searchPattern(rule){
     }
     if(ok){
       found++;
+      let block=[];
+      for(let k=0;k<5;k++){ // 4 + extra row
+        if(data[r+k]) block.push([...data[r+k]]);
+      }
+      lastMatches.push(block);
+
       for(let k=0;k<4;k++){
         let id="c-"+(r+k)+"-"+c;
         let el=document.getElementById(id);
@@ -119,10 +134,27 @@ function searchPattern(rule){
     }
   }
  }
- document.getElementById("checks").innerHTML=
-   found>0 ? "Pattern found at "+found+" places" : "No match found";
+ let chk=document.getElementById("checks");
+ chk.innerHTML = found>0 ? "Pattern found at "+found+" places (click to view)" : "No match found";
+ chk.onclick = found>0 ? showPopup : null;
+   }
+
+ function showPopup(){
+ let h="";
+ lastMatches.forEach((blk,i)=>{
+   h+="<h4>Match "+(i+1)+"</h4><table border='1'>";
+   blk.forEach(r=>{
+     h+="<tr>"+r.map(c=>"<td>"+(c||"**")+"</td>").join("")+"</tr>";
+   });
+   h+="</table><br>";
+ });
+ document.getElementById("popData").innerHTML=h;
+ document.getElementById("popup").style.display="block";
 }
 
+function closePop(){
+ document.getElementById("popup").style.display="none";
+}
 function clearCircles(){
  document.querySelectorAll(".circle").forEach(x=>x.classList.remove("circle"));
 }
