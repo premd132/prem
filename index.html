@@ -101,11 +101,18 @@ csv.onchange=e=>{
  fr.readAsText(e.target.files[0]);
 };
 
+/* ===== NEW PART: PER-CELL CLICK MEMORY ===== */
+let cellClickMap = {};   // key = "r-c" , value = click count
+
 let lastMatches=[];
-let clickCount=0;
 
 function makePattern(r,c){
- clickCount++;
+ let key = r+"-"+c;
+ if(!cellClickMap[key]) cellClickMap[key]=0;
+ cellClickMap[key]++;
+
+ let mode = cellClickMap[key] % 3; // 0,1,2 rotate
+
  let len=5;
  let start=Math.max(0,r-len+1);
  let rows=data.slice(start,r+1);
@@ -122,11 +129,16 @@ function makePattern(r,c){
   let rowShape=[];
   rows[i].forEach(v=>{
    if(v=="**") rowShape.push(0);
-   else rowShape.push(fams[fam(v)]>1?1:0);
+   else{
+     let f=fam(v);
+     if(mode==0) rowShape.push(fams[f]>1?1:0);        // normal
+     else if(mode==1) rowShape.push(fams[f]==1?1:0);  // palti
+     else rowShape.push(Math.random()>0.6?1:0);       // random matka style
+   }
   });
   shape.push(rowShape);
  }
- searchPattern(shape);
+ searchPattern(shape,mode);
 }
 
 function sameShape(a,b){
@@ -142,7 +154,7 @@ function sameFamilyShape(a,b){
  return true;
 }
 
-function searchPattern(shape){
+function searchPattern(shape,mode){
  lastMatches=[];
  let h=shape.length;
  for(let i=0;i<=data.length-h;i++){
@@ -158,7 +170,12 @@ function searchPattern(shape){
    let row=[];
    data[i+k].forEach(v=>{
     if(v=="**") row.push(0);
-    else row.push(fams[fam(v)]>1?1:0);
+    else{
+      let f=fam(v);
+      if(mode==0) row.push(fams[f]>1?1:0);
+      else if(mode==1) row.push(fams[f]==1?1:0);
+      else row.push(1);
+    }
    });
    test.push(row);
   }
