@@ -4,35 +4,14 @@
 <meta charset="UTF-8">
 <title>Pattern System</title>
 <style>
-body{font-family:Arial;margin:0;padding:8px;width:100vw;overflow-x:auto}
-table{border-collapse:collapse;font-size:13px;width:100%;table-layout:fixed}
-td,th{
- border:1px solid #999;
- padding:6px;
- text-align:center;
- font-weight:600;   /* medium bold */
-}
+body{font-family:Arial}
+table{border-collapse:collapse;font-size:14px}
+td,th{border:1px solid #999;padding:4px;text-align:center;font-weight:600}
 .blank{background:#eee;cursor:pointer}
 .circle{border:3px solid red;border-radius:50%}
-#checks div{background:#e8ffe8;margin:6px;padding:8px;cursor:pointer}
-
-#popup{
- position:fixed;
- inset:0;
- background:rgba(0,0,0,.6);
- display:none;
-}
-#box{
- background:#fff;
- position:absolute;
- left:5%;
- right:5%;
- bottom:5%;
- max-height:60%;
- overflow:auto;
- padding:10px;
-}
-
+#checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
+#popup{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none}
+#box{background:#fff;margin:5%;padding:10px;max-height:80%;overflow:auto}
 button{margin:4px}
 </style>
 </head>
@@ -94,9 +73,6 @@ if(data.length==0){
 }
 data=data.map(r=>r.map(norm));
 
-/* ===== CLICK MEMORY ===== */
-let clickCount={};
-
 /* ===== DRAW ===== */
 function draw(){
  let t="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
@@ -113,12 +89,19 @@ function draw(){
 function edit(r,c,el){data[r][c]=norm(el.innerText)}
 draw();
 
-/* ===== ADD / SAVE / CSV ===== */
-function addRow(){ data.push(["","","","","",""]); draw(); }
+/* ===== ADD ROW ===== */
+function addRow(){
+ data.push(["","","","","",""]);
+ draw();
+}
+
+/* ===== SAVE ===== */
 function saveData(){
  localStorage.setItem("pdata",JSON.stringify(data));
  alert("Saved");
 }
+
+/* ===== CSV UPLOAD ===== */
 csv.onchange=e=>{
  let fr=new FileReader();
  fr.onload=()=>{
@@ -130,42 +113,33 @@ csv.onchange=e=>{
 
 /* ===== PATTERN BUILD ===== */
 let lastMatches=[];
-let famPattern=[];
+let clickCount={};
 
 function makePattern(r,c){
  let key=r+"-"+c;
  clickCount[key]=(clickCount[key]||0)+1;
 
- let len=5;
- let shift=clickCount[key]-1;
- let end=r-shift;
- if(end<0) end=r;
- let start=Math.max(0,end-len+1);
-
- let rows=data.slice(start,end+1);
+ let len=4+clickCount[key]; // same blank pe dobara click = naya pattern
+ let start=Math.max(0,r-len+1);
+ let rows=data.slice(start,r+1);
 
  let shape=[];
- famPattern=[];
-
- rows.forEach(row=>{
+ for(let i=0;i<rows.length;i++){
   let fams={};
-  row.forEach(v=>{
-   if(v!="**"){let f=fam(v);fams[f]=(fams[f]||0)+1;}
-  });
-  let s=[],fp=[];
-  row.forEach(v=>{
-   if(v=="**"){s.push(0);fp.push(null);}
-   else{
+  rows[i].forEach(v=>{
+   if(v!="**"){
     let f=fam(v);
-    fp.push(f);
-    s.push(fams[f]>1?1:0);
+    fams[f]=(fams[f]||0)+1;
    }
   });
-  shape.push(s);
-  famPattern.push(fp);
- });
-
- searchPattern(shape,famPattern);
+  let rowShape=[];
+  rows[i].forEach(v=>{
+   if(v=="**") rowShape.push(0);
+   else rowShape.push(fams[fam(v)]>1?1:0);
+  });
+  shape.push(rowShape);
+ }
+ searchPattern(shape);
 }
 
 /* ===== SEARCH ===== */
@@ -176,21 +150,9 @@ function sameShape(a,b){
  return true;
 }
 
-function familyAltMatch(shape,famPat,start){
- for(let i=0;i<shape.length;i++){
-  for(let j=0;j<6;j++){
-   if(shape[i][j]==1){
-    if(fam(data[start+i][j])!=famPat[i][j]) return false;
-   }
-  }
- }
- return true;
-}
-
-function searchPattern(shape,famPat){
+function searchPattern(shape){
  lastMatches=[];
  let h=shape.length;
-
  for(let i=0;i<=data.length-h;i++){
   let test=[];
   for(let k=0;k<h;k++){
@@ -205,46 +167,43 @@ function searchPattern(shape,famPat){
    });
    test.push(row);
   }
-
-  if(sameShape(shape,test) || familyAltMatch(shape,famPat,i)){
+  if(sameShape(shape,test)){
    lastMatches.push(i);
   }
  }
-
  showChecks(shape);
 }
 
-/* ===== CHECK LINE ===== */
+/* ===== CHECK LINES ===== */
 function showChecks(shape){
  checks.innerHTML="";
  if(lastMatches.length==0){
   checks.innerHTML="<i>No match</i>";
   return;
  }
- let d=document.createElement("div");
- d.innerText="Pattern found at "+lastMatches.length+" places (click)";
- d.onclick=()=>showMatch(shape);
- checks.appendChild(d);
+ lastMatches.forEach((idx,n)=>{
+  let d=document.createElement("div");
+  d.innerText=(n+1)+". Pattern at row "+(idx+1)+" (click)";
+  d.onclick=()=>showSingleMatch(idx,shape,n+1);
+  checks.appendChild(d);
+ });
 }
 
 /* ===== POPUP ===== */
-function showMatch(shape){
+function showSingleMatch(idx,shape,no){
  let h=shape.length;
- let html="";
- lastMatches.forEach((idx,n)=>{
-  html+="<h4>Match "+(n+1)+"</h4><table>";
-  for(let i=0;i<h+1;i++){
-   html+="<tr>";
-   if(data[idx+i]){
-    data[idx+i].forEach((v,j)=>{
-     let cls=(i<h && shape[i][j])?"class='circle'":"";
-     html+=`<td ${cls}>${v}</td>`;
-    });
-   }
-   html+="</tr>";
+ let html="<h4>Match "+no+"</h4><table>";
+ for(let i=0;i<h+1;i++){
+  html+="<tr>";
+  if(data[idx+i]){
+   data[idx+i].forEach((v,j)=>{
+    let cls=(i<h && shape[i][j])?"class='circle'":"";
+    html+=`<td ${cls}>${v}</td>`;
+   });
   }
-  html+="</table>";
- });
+  html+="</tr>";
+ }
+ html+="</table>";
  popData.innerHTML=html;
  popup.style.display="block";
 }
