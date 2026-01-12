@@ -82,11 +82,11 @@ function draw(){
  data.forEach((r,ri)=>{
   t+="<tr>";
   r.forEach((c,ci)=>{
-   if(c=="**"){
+   if(c=="**" && !editMode){
      t+=`<td class='blank' onclick="makePattern(${ri},${ci})">**</td>`;
    }else{
      if(editMode)
-       t+=`<td contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
+       t+=`<td contenteditable oninput="edit(${ri},${ci},this)">${c=="**"?"":c}</td>`;
      else
        t+=`<td>${c}</td>`;
    }
@@ -95,7 +95,10 @@ function draw(){
  });
  tbl.innerHTML=t;
 }
-function edit(r,c,el){data[r][c]=norm(el.innerText)}
+function edit(r,c,el){
+ let v=el.innerText.trim();
+ data[r][c]=v==""?"**":norm(v);
+}
 draw();
 
 function addRow(){ data.push(["","","","","",""]); draw(); }
@@ -109,7 +112,6 @@ csv.onchange=e=>{
 
 let lastMatches=[];
 
-/* Pattern builder */
 function buildAdvancedShape(rows){
  let shape=[];
  for(let i=0;i<rows.length;i++){
