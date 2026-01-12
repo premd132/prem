@@ -5,18 +5,23 @@
 <title>Pattern System</title>
 <style>
 table{border-collapse:collapse;font-size:12px}
-td,th{border:1px solid #999;padding:4px;text-align:center}
+td,th{border:1px solid #999;padding:4px;text-align:center;min-width:32px}
 .blank{background:#eee;cursor:pointer}
 .circle{border:3px solid red;border-radius:50%}
-#checks div{background:#e8ffe8;margin:4px;padding:4px;cursor:pointer}
+#checks{background:#e8ffe8;margin:6px;padding:6px}
+button{margin:5px;padding:6px}
 </style>
 </head>
 <body>
 
-<h3>Pattern System</h3>
+<h2>Pattern System</h2>
+
+<input type="file" id="csvFile">
+<button onclick="addRow()">Add Row</button>
+
 <table id="tbl"></table>
 
-<h4>✔ Check Lines</h4>
+<h3>✔ Check Lines</h3>
 <div id="checks"></div>
 
 <script>
@@ -36,9 +41,10 @@ const families={
 "FR":["00","11","22","33","44","55","66","77","88","99"]
 };
 
+// ===== HELPERS =====
 function norm(v){
- if(v===""||v==="**") return "";
- v=String(v); 
+ if(v===""||v==="**") return "**";
+ v=String(v);
  return v.length==1?"0"+v:v;
 }
 function getFamily(v){
@@ -46,7 +52,7 @@ function getFamily(v){
  return "NA";
 }
 
-// ===== SAMPLE DATA =====
+// ===== DATA =====
 let data=[
 ["51","91","41","57","19","95"],
 ["05","90","74","06","19","63"],
@@ -60,38 +66,84 @@ let data=[
 ["95","28","11","29","28","18"],
 ["47","83","45","80","33","18"],
 ["96","25","78","59","30","94"],
-["","","","","",""] // blank row
+["**","**","**","**","**","**"]
 ];
 data=data.map(r=>r.map(norm));
 
-// ===== DRAW TABLE =====
+// ===== RENDER =====
 function draw(){
  let t="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
  data.forEach((r,ri)=>{
-   t+="<tr>";
-   r.forEach((c,ci)=>{
-     if(c=="") 
-       t+=`<td class='blank' onclick='makePattern(${ri},${ci})'>**</td>`;
-     else 
-       t+=`<td id='c-${ri}-${ci}'>${c}</td>`;
-   });
-   t+="</tr>";
+  t+="<tr>";
+  r.forEach((c,ci)=>{
+   if(c=="**")
+    t+=`<td class="blank" onclick="makePattern(${ri},${ci})">**</td>`;
+   else
+    t+=`<td onclick="editCell(${ri},${ci})" id="c-${ri}-${ci}">${c}</td>`;
+  });
+  t+="</tr>";
  });
  document.getElementById("tbl").innerHTML=t;
 }
+draw();
 
-// ===== CLICK BLANK =====
-function makePattern(r,c){
- let fam=[];
- for(let i=r-1;i>=0 && fam.length<3;i--){
-   let v=data[i][c];
-   if(v) fam.push(getFamily(v));
+// ===== EDIT CELL =====
+function editCell(r,c){
+ let v=prompt("Edit value",data[r][c]);
+ if(v!==null){
+  data[r][c]=norm(v);
+  draw();
  }
- document.getElementById("checks").innerHTML=
-   "<div>Picked families: "+fam.join(" → ")+"</div>";
 }
 
-draw();
+// ===== ADD ROW =====
+function addRow(){
+ data.push(["**","**","**","**","**","**"]);
+ draw();
+}
+
+// ===== CSV UPLOAD =====
+document.getElementById("csvFile").addEventListener("change",e=>{
+ let f=e.target.files[0];
+ if(!f) return;
+ let r=new FileReader();
+ r.onload=()=>{
+  let rows=r.result.trim().split("\n");
+  data=rows.map(x=>x.split(",").map(norm));
+  draw();
+ };
+ r.readAsText(f);
+});
+
+// ===== PATTERN LOGIC =====
+function clearCircles(){
+ document.querySelectorAll(".circle").forEach(x=>x.classList.remove("circle"));
+}
+
+function makePattern(r,c){
+ clearCircles();
+ if(r<3){alert("3 row se kam me pattern nahi banega");return;}
+
+ let f1=getFamily(data[r-1][c]);
+ let f2=getFamily(data[r-2][c]);
+ let f3=getFamily(data[r-3][c]);
+ let pattern=[f3,f2,f1];
+
+ document.getElementById("checks").innerHTML=
+ "Picked families: "+pattern.join(" → ");
+
+ // search vertical same pattern
+ for(let i=0;i<=r-3;i++){
+  let a=getFamily(data[i][c]);
+  let b=getFamily(data[i+1][c]);
+  let d=getFamily(data[i+2][c]);
+  if(a==pattern[0] && b==pattern[1] && d==pattern[2]){
+   document.getElementById(`c-${i}-${c}`)?.classList.add("circle");
+   document.getElementById(`c-${i+1}-${c}`)?.classList.add("circle");
+   document.getElementById(`c-${i+2}-${c}`)?.classList.add("circle");
+  }
+ }
+}
 </script>
 </body>
 </html>
