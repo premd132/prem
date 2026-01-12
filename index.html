@@ -10,8 +10,24 @@ td,th{border:1px solid #999;padding:6px;text-align:center}
 .blank{background:#eee;cursor:pointer}
 .circle{border:3px solid red;border-radius:50%}
 #checks div{background:#e8ffe8;margin:6px;padding:8px;cursor:pointer}
-#popup{position:fixed;inset:0;background:rgba(0,0,0,.6);display:none}
-#box{background:#fff;margin:3%;padding:10px;max-height:85%;overflow:auto}
+
+#popup{
+ position:fixed;
+ inset:0;
+ background:rgba(0,0,0,.6);
+ display:none;
+}
+#box{
+ background:#fff;
+ position:absolute;
+ left:5%;
+ right:5%;
+ bottom:5%;
+ max-height:60%;
+ overflow:auto;
+ padding:10px;
+}
+
 button{margin:4px}
 </style>
 </head>
@@ -73,6 +89,9 @@ if(data.length==0){
 }
 data=data.map(r=>r.map(norm));
 
+/* ===== CLICK MEMORY ===== */
+let clickCount={};
+
 /* ===== DRAW ===== */
 function draw(){
  let t="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
@@ -111,37 +130,41 @@ csv.onchange=e=>{
  fr.readAsText(e.target.files[0]);
 };
 
-/* ===== PATTERN BUILD ===== */
+/* ===== PATTERN ===== */
 let lastMatches=[];
 let famPattern=[];
 
 function makePattern(r,c){
+ let key=r+"-"+c;
+ clickCount[key]=(clickCount[key]||0)+1;
+
  let len=5;
- let start=Math.max(0,r-len+1);
- let rows=data.slice(start,r+1);
+ let shift=clickCount[key]-1;
+ let end=r-shift;
+ if(end<0) end=r;
+ let start=Math.max(0,end-len+1);
+ let rows=data.slice(start,end+1);
 
  let shape=[];
  famPattern=[];
- for(let i=0;i<rows.length;i++){
+ rows.forEach(row=>{
   let fams={};
-  rows[i].forEach(v=>{
-   if(v!="**"){
-    let f=fam(v);
-    fams[f]=(fams[f]||0)+1;
-   }
+  row.forEach(v=>{
+   if(v!="**"){let f=fam(v);fams[f]=(fams[f]||0)+1;}
   });
-  let rowShape=[],rowFam=[];
-  rows[i].forEach(v=>{
-   if(v=="**"){rowShape.push(0);rowFam.push(null);}
+  let s=[],fp=[];
+  row.forEach(v=>{
+   if(v=="**"){s.push(0);fp.push(null);}
    else{
     let f=fam(v);
-    rowFam.push(f);
-    rowShape.push(fams[f]>1?1:0);
+    fp.push(f);
+    s.push(fams[f]>1?1:0);
    }
   });
-  shape.push(rowShape);
-  famPattern.push(rowFam);
- }
+  shape.push(s);
+  famPattern.push(fp);
+ });
+
  searchPattern(shape,famPattern);
 }
 
@@ -152,15 +175,10 @@ function sameShape(a,b){
    if(a[i][j]!=b[i][j]) return false;
  return true;
 }
-
 function altMatch(shape,famPat,start){
- for(let i=0;i<shape.length;i++){
-  for(let j=0;j<6;j++){
-   if(shape[i][j]==1){
-    if(fam(data[start+i][j])!=famPat[i][j]) return false;
-   }
-  }
- }
+ for(let i=0;i<shape.length;i++)
+  for(let j=0;j<6;j++)
+   if(shape[i][j]==1 && fam(data[start+i][j])!=famPat[i][j]) return false;
  return true;
 }
 
@@ -188,7 +206,7 @@ function searchPattern(shape,famPat){
  showChecks(shape);
 }
 
-/* ===== CHECK LINES ===== */
+/* ===== CHECK LINE ===== */
 function showChecks(shape){
  checks.innerHTML="";
  if(lastMatches.length==0){
