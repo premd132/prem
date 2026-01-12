@@ -8,19 +8,16 @@ table{border-collapse:collapse;font-size:12px}
 td,th{border:1px solid #999;padding:4px;text-align:center}
 .blank{background:#eee;cursor:pointer}
 .circle{border:3px solid red;border-radius:50%}
-#checks{background:#e8ffe8;margin:8px;padding:8px}
+#checks{margin-top:10px;padding:8px;background:#eaffea}
 </style>
 </head>
 <body>
 
-<h2>Pattern System</h2>
-<input type="file" id="csvFile">
-<button onclick="addRow()">Add Row</button>
-<br><br>
+<h3>Pattern System</h3>
 <table id="tbl"></table>
 
-<h3>✔ Check Lines</h3>
-<div id="checks">Click blank cell to generate pattern</div>
+<h4>✔ Check Lines</h4>
+<div id="checks">No pattern yet</div>
 
 <script>
 // ===== FAMILY DATA =====
@@ -39,11 +36,7 @@ const families={
 "FR":["00","11","22","33","44","55","66","77","88","99"]
 };
 
-function norm(v){
- if(v==="**"||v==="") return "**";
- v=String(v);
- return v.length==1?"0"+v:v;
-}
+function palti(v){return v[1]+v[0];}
 function getFamily(v){
  for(let k in families) if(families[k].includes(v)) return k;
  return "NA";
@@ -63,17 +56,15 @@ let data=[
 ["95","28","11","29","28","18"],
 ["47","83","45","80","33","18"],
 ["96","25","78","59","30","94"],
-["**","**","**","**","**","**"]
+["","","","","",""] // blank row
 ];
-data=data.map(r=>r.map(norm));
 
-// ===== RENDER =====
 function draw(){
  let t="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
  data.forEach((r,ri)=>{
   t+="<tr>";
   r.forEach((c,ci)=>{
-    if(c=="**") t+=`<td class="blank" onclick="makePattern(${ci})">**</td>`;
+    if(c==="") t+=`<td class="blank" onclick="makePattern(${ri},${ci})">**</td>`;
     else t+=`<td id="c-${ri}-${ci}">${c}</td>`;
   });
   t+="</tr>";
@@ -83,63 +74,58 @@ function draw(){
 draw();
 
 // ===== MAIN LOGIC =====
-function makePattern(col){
+function makePattern(r,c){
  clearCircles();
-
- let picked=[];
- for(let i=data.length-1;i>=0 && picked.length<3;i--){
-   let v=data[i][col];
-   if(v!="**"){
-     picked.push(getFamily(v));
-   }
+ let seq=[];
+ for(let i=r-1;i>=0 && seq.length<4;i--){
+   if(data[i][c]!="") seq.unshift(data[i][c]);
  }
- if(picked.length<3 || picked.includes("NA")){
-   document.getElementById("checks").innerHTML="Invalid pattern (NA or less rows)";
+ if(seq.length<4){
+   alert("Upar 4 valid row nahi mile");
    return;
  }
- picked=picked.reverse(); // top to bottom
+ // convert to rule objects
+ let rule=seq.map(v=>({
+   jodi:v,
+   palti:palti(v),
+   fam:getFamily(v)
+ }));
+ searchPattern(rule);
+}
 
- // search
- for(let i=0;i<=data.length-3;i++){
-   let f1=getFamily(data[i][col]);
-   let f2=getFamily(data[i+1][col]);
-   let f3=getFamily(data[i+2][col]);
-   if(f1==picked[0] && f2==picked[1] && f3==picked[2]){
-     mark(i,col); mark(i+1,col); mark(i+2,col);
-   }
+function matchCell(val,rule){
+ if(val===rule.jodi) return true;
+ if(val===rule.palti) return true;
+ if(getFamily(val)===rule.fam) return true;
+ return false;
+}
+
+function searchPattern(rule){
+ let found=0;
+ for(let c=0;c<6;c++){
+  for(let r=0;r<=data.length-4;r++){
+    let ok=true;
+    for(let k=0;k<4;k++){
+      let v=data[r+k][c];
+      if(v==="" || !matchCell(v,rule[k])){ok=false;break;}
+    }
+    if(ok){
+      found++;
+      for(let k=0;k<4;k++){
+        let id="c-"+(r+k)+"-"+c;
+        let el=document.getElementById(id);
+        if(el) el.classList.add("circle");
+      }
+    }
+  }
  }
-
  document.getElementById("checks").innerHTML=
-   "Picked families: "+picked.join(" → ");
+   found>0 ? "Pattern found at "+found+" places" : "No match found";
 }
 
-function mark(r,c){
- let el=document.getElementById(`c-${r}-${c}`);
- if(el) el.classList.add("circle");
-}
 function clearCircles(){
  document.querySelectorAll(".circle").forEach(x=>x.classList.remove("circle"));
 }
-
-// ===== ADD ROW =====
-function addRow(){
- let row=[];
- for(let i=0;i<6;i++) row.push("**");
- data.push(row);
- draw();
-}
-
-// ===== CSV UPLOAD =====
-document.getElementById("csvFile").addEventListener("change",e=>{
- let f=e.target.files[0];
- let r=new FileReader();
- r.onload=()=>{
-  let lines=r.result.trim().split(/\r?\n/);
-  data=lines.map(l=>l.split(",").map(x=>norm(x.trim())));
-  draw();
- };
- r.readAsText(f);
-});
 </script>
 </body>
 </html>
