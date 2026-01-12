@@ -102,11 +102,10 @@ csv.onchange=e=>{
 };
 
 let lastMatches=[];
-let patternMode=0; // 0,1,2 rotate
+let clickCount=0;
 
 function makePattern(r,c){
- patternMode = (patternMode+1)%3; // har click pe naya mode
-
+ clickCount++;
  let len=5;
  let start=Math.max(0,r-len+1);
  let rows=data.slice(start,r+1);
@@ -120,16 +119,10 @@ function makePattern(r,c){
     fams[f]=(fams[f]||0)+1;
    }
   });
-
   let rowShape=[];
   rows[i].forEach(v=>{
    if(v=="**") rowShape.push(0);
-   else{
-    let f=fam(v);
-    if(patternMode==0) rowShape.push(fams[f]>1?1:0);               // normal family
-    else if(patternMode==1) rowShape.push(fams[f]==1?1:0);        // palti type
-    else rowShape.push(Math.random()>0.6?1:0);                    // matka-style random
-   }
+   else rowShape.push(fams[fam(v)]>1?1:0);
   });
   shape.push(rowShape);
  }
@@ -140,6 +133,12 @@ function sameShape(a,b){
  for(let i=0;i<a.length;i++)
   for(let j=0;j<6;j++)
    if(a[i][j]!=b[i][j]) return false;
+ return true;
+}
+function sameFamilyShape(a,b){
+ for(let i=0;i<a.length;i++)
+  for(let j=0;j<6;j++)
+   if(a[i][j]==1 && b[i][j]!=1) return false;
  return true;
 }
 
@@ -159,16 +158,15 @@ function searchPattern(shape){
    let row=[];
    data[i+k].forEach(v=>{
     if(v=="**") row.push(0);
-    else{
-     let f=fam(v);
-     if(patternMode==0) row.push(fams[f]>1?1:0);
-     else if(patternMode==1) row.push(fams[f]==1?1:0);
-     else row.push(1); // loose match
-    }
+    else row.push(fams[fam(v)]>1?1:0);
    });
    test.push(row);
   }
-  if(sameShape(shape,test)) lastMatches.push(i);
+  if(sameShape(shape,test)){
+   lastMatches.push({index:i,type:"exact"});
+  }else if(sameFamilyShape(shape,test)){
+   lastMatches.push({index:i,type:"family"});
+  }
  }
  showChecks(shape);
 }
@@ -179,17 +177,18 @@ function showChecks(shape){
   checks.innerHTML="<i>No match</i>";
   return;
  }
- lastMatches.forEach((idx,n)=>{
+ lastMatches.forEach((m,idx)=>{
   let d=document.createElement("div");
-  d.innerText=(n+1)+". Match (click)";
-  d.onclick=()=>showOne(shape,idx,n);
+  d.innerText=(idx+1)+". "+m.type+" match (click)";
+  d.onclick=()=>showOne(shape,idx);
   checks.appendChild(d);
  });
 }
 
-function showOne(shape,idx,n){
+function showOne(shape,n){
+ let idx=lastMatches[n].index;
  let h=shape.length;
- let html="<h4>Match "+(n+1)+"</h4><table>";
+ let html="<h4>Match "+(n+1)+" - "+lastMatches[n].type+"</h4><table>";
  for(let i=0;i<h+1;i++){
   html+="<tr>";
   if(data[idx+i]){
@@ -204,6 +203,7 @@ function showOne(shape,idx,n){
  popData.innerHTML=html;
  popup.style.display="block";
 }
+
 function closePop(){popup.style.display="none"}
 </script>
 </body>
