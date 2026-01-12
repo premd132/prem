@@ -8,24 +8,27 @@ table{border-collapse:collapse;font-size:12px}
 td,th{border:1px solid #999;padding:4px;text-align:center}
 .blank{background:#eee;cursor:pointer}
 .circle{border:3px solid red;border-radius:50%}
-#checks{margin-top:10px;padding:8px;background:#eaffea}
+#checks{background:#eaffea;padding:6px;margin-top:6px;cursor:pointer}
+#popup{position:fixed;inset:0;background:rgba(0,0,0,.5);display:none}
+#popupBox{background:#fff;margin:5%;padding:10px;max-height:80%;overflow:auto}
 </style>
 </head>
 <body>
 
 <h3>Pattern System</h3>
+<input type="file" id="csvFile">
+<button onclick="addRow()">Add Row</button>
 <table id="tbl"></table>
 
-<h4>✔ Check Lines</h4>
- <div id="popup" style="display:none;
- position:fixed;left:0;top:0;right:0;bottom:0;
- background:rgba(0,0,0,.5);">
-  <div style="background:#fff;margin:40px;padding:10px;max-height:80%;overflow:auto">
-    <button onclick="closePop()">Close</button>
-    <div id="popData"></div>
-  </div>
+<h4>✔ Check Line</h4>
+<div id="checks">Blank cell pe click karo</div>
+
+<div id="popup">
+ <div id="popupBox">
+  <button onclick="closePop()">Close</button>
+  <div id="popData"></div>
  </div>
-<div id="checks">No pattern yet</div>
+</div>
 
 <script>
 // ===== FAMILY DATA =====
@@ -44,13 +47,21 @@ const families={
 "FR":["00","11","22","33","44","55","66","77","88","99"]
 };
 
-function palti(v){return v[1]+v[0];}
+function norm(v){
+ if(v===""||v==="**") return "**";
+ v=String(v).trim();
+ if(v.length===1) v="0"+v;
+ return v;
+}
 function getFamily(v){
+ v=norm(v);
+ if(v==="**") return "NA";
  for(let k in families) if(families[k].includes(v)) return k;
  return "NA";
 }
+function palti(v){v=norm(v);return v[1]+v[0];}
 
-// ===== SAMPLE DATA =====
+// ===== DATA =====
 let data=[
 ["51","91","41","57","19","95"],
 ["05","90","74","06","19","63"],
@@ -64,16 +75,18 @@ let data=[
 ["95","28","11","29","28","18"],
 ["47","83","45","80","33","18"],
 ["96","25","78","59","30","94"],
-["","","","","",""] // blank row
+["**","**","**","**","**","**"]
 ];
+data=data.map(r=>r.map(norm));
 
+// ===== DRAW =====
 function draw(){
  let t="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
  data.forEach((r,ri)=>{
   t+="<tr>";
   r.forEach((c,ci)=>{
-    if(c==="") t+=`<td class="blank" onclick="makePattern(${ri},${ci})">**</td>`;
-    else t+=`<td id="c-${ri}-${ci}">${c}</td>`;
+   if(c==="**") t+=`<td class="blank" onclick="makePattern(${ci})">**</td>`;
+   else t+=`<td id="c-${ri}-${ci}" onclick="editCell(${ri},${ci})">${c}</td>`;
   });
   t+="</tr>";
  });
@@ -81,83 +94,95 @@ function draw(){
 }
 draw();
 
-// ===== MAIN LOGIC =====
-function makePattern(r,c){
- clearCircles();
+// ===== EDIT =====
+function editCell(r,c){
+ let v=prompt("Edit",data[r][c]);
+ if(v!==null){data[r][c]=norm(v);draw();}
+}
+
+// ===== ADD ROW =====
+function addRow(){
+ data.push(["**","**","**","**","**","**"]);
+ draw();
+}
+
+// ===== CSV UPLOAD =====
+document.getElementById("csvFile").addEventListener("change",e=>{
+ let f=e.target.files[0]; if(!f) return;
+ let r=new FileReader();
+ r.onload=()=>{
+  data=r.result.trim().split(/\r?\n/).map(x=>x.split(",").map(norm));
+  draw();
+ };
+ r.readAsText(f);
+});
+
+// ===== PATTERN ENGINE =====
+let lastMatches=[];
+
+function clearCircles(){
+ document.querySelectorAll(".circle").forEach(x=>x.classList.remove("circle"));
+}
+
+function makePattern(col){
+ clearCircles(); lastMatches=[];
  let seq=[];
- for(let i=r-1;i>=0 && seq.length<4;i--){
-   if(data[i][c]!="") seq.unshift(data[i][c]);
+ for(let i=data.length-1;i>=0 && seq.length<4;i--){
+  if(data[i][col]!=="**") seq.unshift(data[i][col]);
  }
- if(seq.length<4){
-   alert("Upar 4 valid row nahi mile");
-   return;
- }
- // convert to rule objects
- let rule=seq.map(v=>({
-   jodi:v,
-   palti:palti(v),
-   fam:getFamily(v)
- }));
+ if(seq.length<4){alert("4 valid row nahi mili");return;}
+
+ let rule=seq.map(v=>({j:v,p:palti(v),f:getFamily(v)}));
  searchPattern(rule);
 }
 
 function matchCell(val,rule){
- if(val===rule.jodi) return true;
- if(val===rule.palti) return true;
- if(getFamily(val)===rule.fam) return true;
+ val=norm(val);
+ if(val===rule.j) return true;
+ if(val===rule.p) return true;
+ if(getFamily(val)===rule.f) return true;
  return false;
 }
 
 function searchPattern(rule){
- let found=0;
- lastMatches=[];
+ let count=0;
  for(let c=0;c<6;c++){
   for(let r=0;r<=data.length-4;r++){
-    let ok=true;
+   let ok=true;
+   for(let k=0;k<4;k++){
+    if(data[r+k][c]==="**"||!matchCell(data[r+k][c],rule[k])){ok=false;break;}
+   }
+   if(ok){
+    count++;
+    let block=[];
+    for(let k=0;k<5;k++) if(data[r+k]) block.push([...data[r+k]]);
+    lastMatches.push(block);
     for(let k=0;k<4;k++){
-      let v=data[r+k][c];
-      if(v==="" || !matchCell(v,rule[k])){ok=false;break;}
+     let el=document.getElementById(`c-${r+k}-${c}`);
+     if(el) el.classList.add("circle");
     }
-    if(ok){
-      found++;
-      let block=[];
-      for(let k=0;k<5;k++){ // 4 + extra row
-        if(data[r+k]) block.push([...data[r+k]]);
-      }
-      lastMatches.push(block);
-
-      for(let k=0;k<4;k++){
-        let id="c-"+(r+k)+"-"+c;
-        let el=document.getElementById(id);
-        if(el) el.classList.add("circle");
-      }
-    }
+   }
   }
  }
  let chk=document.getElementById("checks");
- chk.innerHTML = found>0 ? "Pattern found at "+found+" places (click to view)" : "No match found";
- chk.onclick = found>0 ? showPopup : null;
-   }
+ chk.innerText = count>0 ? `Pattern found at ${count} places (click)` : "No match";
+ chk.onclick = count>0 ? showPopup : null;
+}
 
- function showPopup(){
+// ===== POPUP =====
+function showPopup(){
  let h="";
- lastMatches.forEach((blk,i)=>{
-   h+="<h4>Match "+(i+1)+"</h4><table border='1'>";
-   blk.forEach(r=>{
-     h+="<tr>"+r.map(c=>"<td>"+(c||"**")+"</td>").join("")+"</tr>";
-   });
-   h+="</table><br>";
+ lastMatches.forEach((b,i)=>{
+  h+=`<h4>Match ${i+1}</h4><table border=1>`;
+  b.forEach(r=>{
+   h+="<tr>"+r.map(x=>"<td>"+x+"</td>").join("")+"</tr>";
+  });
+  h+="</table><br>";
  });
  document.getElementById("popData").innerHTML=h;
  document.getElementById("popup").style.display="block";
 }
-
-function closePop(){
- document.getElementById("popup").style.display="none";
-}
-function clearCircles(){
- document.querySelectorAll(".circle").forEach(x=>x.classList.remove("circle"));
-}
+function closePop(){document.getElementById("popup").style.display="none";}
 </script>
 </body>
 </html>
