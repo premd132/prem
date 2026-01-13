@@ -2,193 +2,146 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pattern System</title>
+<title>Auto Pattern System</title>
 <style>
 body{font-family:Arial}
 table{border-collapse:collapse;font-size:13px}
 td,th{border:1px solid #999;padding:5px;text-align:center;font-weight:600}
 .blank{background:#eee;cursor:pointer}
-td{cursor:pointer}
-
-/* Circle base */
 .circle{border:3px solid red;border-radius:50%}
-
-/* Family Colors */
-.f12{border-color:#e74c3c}.f13{border-color:#9b59b6}.f14{border-color:#3498db}
-.f15{border-color:#16a085}.f23{border-color:#f39c12}.f24{border-color:#d35400}
-.f25{border-color:#1abc9c}.f34{border-color:#2c3e50}.f35{border-color:#27ae60}
-.f45{border-color:#8e44ad}.fHR{border-color:#c0392b}.fFR{border-color:#000}
-
+.mark{background:yellow}
 #checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
-#popup{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid #000;
-display:none;max-height:50%;overflow:auto}
-button{margin:4px}
+#popup{position:fixed;left:0;right:0;bottom:0;background:#fff;
+border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
 </style>
 </head>
 <body>
 
-<h2>Pattern System</h2>
-<input type="file" id="csv">
-<button onclick="addRow()">Add Row</button>
-<button onclick="saveData()">Save</button>
-
+<h2>Auto Pattern System</h2>
 <table id="tbl"></table>
 
-<h3>✔ Check Lines</h3>
+<h3>✔ Check Lines (Top 3)</h3>
 <div id="checks"></div>
 
 <div id="popup">
-  <button onclick="closePop()">Close</button>
-  <div id="popData"></div>
+<button onclick="popup.style.display='none'">Close</button>
+<div id="popData"></div>
 </div>
 
 <script>
+/* ===== FAMILY ===== */
 const families={
-"12":["12","17","21","26","62","67","71","76"],"13":["13","18","31","36","63","68","81","86"],
-"14":["14","19","41","46","64","69","91","96"],"15":["01","06","10","15","51","56","60","65"],
-"23":["23","28","32","37","73","78","82","87"],"24":["24","29","42","47","74","79","92","97"],
-"25":["02","07","20","25","52","57","70","75"],"34":["34","39","43","48","84","89","93","98"],
-"35":["03","08","30","35","53","58","80","85"],"45":["04","09","40","45","54","59","90","95"],
-"HR":["05","16","27","38","49","50","61","72","83","94"],"FR":["00","11","22","33","44","55","66","77","88","99"]
+"12":["12","17","21","26","62","67","71","76"],
+"13":["13","18","31","36","63","68","81","86"],
+"14":["14","19","41","46","64","69","91","96"],
+"15":["01","06","10","15","51","56","60","65"],
+"23":["23","28","32","37","73","78","82","87"],
+"24":["24","29","42","47","74","79","92","97"],
+"25":["02","07","20","25","52","57","70","75"],
+"34":["34","39","43","48","84","89","93","98"],
+"35":["03","08","30","35","53","58","80","85"],
+"45":["04","09","40","45","54","59","90","95"],
+"HR":["05","16","27","38","49","50","61","72","83","94"],
+"FR":["00","11","22","33","44","55","66","77","88","99"]
 };
 
-function norm(v){if(v==""||v=="**")return "**";v=String(v);return v.length==1?"0"+v:v;}
-function fam(v){for(let k in families) if(families[k].includes(v)) return k;return "NA";}
-function palti(v){return v.split("").reverse().join("");}
-
-let data=JSON.parse(localStorage.getItem("pdata")||"[]");
-if(data.length==0){data=[["51","91","41","57","19","95"],["05","90","74","06","19","63"],
-["90","34","82","09","28","19"],["","","","","",""]];}
-data=data.map(r=>r.map(norm));
-
-let baseMode=false;
-let baseShape=null;
-
-function draw(){
- let t="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
- data.forEach((r,ri)=>{
-  t+="<tr>";
-  r.forEach((c,ci)=>{
-   if(c=="**") t+=`<td class='blank' onclick="makePattern(${ri},${ci})">**</td>`;
-   else t+=`<td onclick="baseClick(${ri},${ci})" contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
-  });
-  t+="</tr>";
- });
- tbl.innerHTML=t;
+function fam(v){
+ for(let k in families) if(families[k].includes(v)) return k;
+ return "NA";
 }
-function edit(r,c,el){data[r][c]=norm(el.innerText)}
+function palti(v){return v[1]+v[0];}
+
+/* ===== SAMPLE DATA ===== */
+let data=[
+["91","69","60","71","85","20"],
+["95","28","11","29","28","18"],
+["47","83","45","80","33","18"],
+["96","25","78","59","30","94"],
+["**","**","**","**","**","**"]
+];
+
+/* ===== DRAW ===== */
+function draw(){
+ let h="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
+ data.forEach((r,ri)=>{
+  h+="<tr>";
+  r.forEach((c,ci)=>{
+   if(c=="**") h+=`<td class="blank" onclick="startPattern(${ri},${ci})">**</td>`;
+   else h+=`<td onclick="pickBase(${ri},${ci})">${c}</td>`;
+  });
+  h+="</tr>";
+ });
+ tbl.innerHTML=h;
+}
 draw();
 
-function addRow(){data.push(["","","","","",""]);draw();}
-function saveData(){localStorage.setItem("pdata",JSON.stringify(data));alert("Saved");}
-csv.onchange=e=>{
- let fr=new FileReader();
- fr.onload=()=>{data=fr.result.trim().split("\n").map(r=>r.split(",").map(norm));draw();};
- fr.readAsText(e.target.files[0]);
-};
+/* ===== GLOBAL ===== */
+let baseCell=null;
+let liveShape=null;
 
-let lastMatches=[];
-
-/* ===== 1) BLANK CLICK PATTERN ===== */
-function makePattern(r,c){
- baseMode=true;
- let len=5;
- let start=Math.max(0,r-len+1);
- let rows=data.slice(start,r+1);
+/* ===== STEP 1: BLANK CLICK ===== */
+function startPattern(r,c){
  let shape=[];
- for(let i=0;i<rows.length;i++){
-  let fams={};
-  rows[i].forEach(v=>{if(v!="**"){let f=fam(v);fams[f]=(fams[f]||0)+1;}});
-  let rowShape=[];
-  rows[i].forEach(v=>{if(v=="**")rowShape.push(0);else rowShape.push(fams[fam(v)]>1?1:0);});
-  shape.push(rowShape);
- }
- baseShape=shape;
- searchPattern(shape);
-}
-
-/* ===== 2) BASE JODI CLICK ===== */
-function baseClick(r,c){
- if(!baseMode) return;
- let base=data[r][c];
- if(base=="**") return;
- let bf=fam(base);
- let bp=palti(base);
-
- let len=5;
- let start=Math.max(0,r-len+1);
- let rows=data.slice(start,r+1);
-
- let shape=[];
- for(let i=0;i<rows.length;i++){
+ for(let i=r-4;i<=r;i++){
+  if(i<0) continue;
   let row=[];
-  rows[i].forEach(v=>{
-   if(v=="**") row.push(0);
-   else if(fam(v)==bf || v==bp) row.push(1);
-   else row.push(0);
-  });
+  for(let j=0;j<6;j++){
+   row.push(data[i][j]!="**"?1:0);
+  }
   shape.push(row);
  }
- searchPattern(shape);
+ liveShape=shape;
+ alert("Ab base jodi par click karo");
 }
 
-/* ===== MATCH LOGIC ===== */
-function sameShape(a,b){
- for(let i=0;i<a.length;i++)for(let j=0;j<6;j++)if(a[i][j]!=b[i][j]) return false;
- return true;
-}
-function sameFamilyShape(a,b){
- for(let i=0;i<a.length;i++)for(let j=0;j<6;j++)if(a[i][j]==1 && b[i][j]!=1) return false;
- return true;
+/* ===== STEP 2: BASE JODI ===== */
+function pickBase(r,c){
+ if(!liveShape) return;
+ baseCell={r,c,val:data[r][c]};
+ runAutoSearch();
 }
 
-function searchPattern(shape){
- lastMatches=[];
- let h=shape.length;
- for(let i=0;i<=data.length-h;i++){
-  let test=[];
-  for(let k=0;k<h;k++){
-   let fams={};
-   data[i+k].forEach(v=>{if(v!="**"){let f=fam(v);fams[f]=(fams[f]||0)+1;}});
-   let row=[];
-   data[i+k].forEach(v=>{if(v=="**")row.push(0);else row.push(fams[fam(v)]>1?1:0);});
-   test.push(row);
+/* ===== AUTO SEARCH ===== */
+function runAutoSearch(){
+ let results=[];
+ for(let i=0;i<data.length-4;i++){
+  for(let j=0;j<6;j++){
+   let score=0;
+   for(let k=0;k<5;k++){
+    let v=data[i+k][j];
+    if(v=="**") continue;
+    if(v==baseCell.val) score+=3;
+    if(palti(v)==baseCell.val) score+=2;
+    if(fam(v)==fam(baseCell.val)) score+=1;
+   }
+   if(score>0) results.push({i,j,score});
   }
-  if(sameShape(shape,test)) lastMatches.push({index:i,type:"exact"});
-  else if(sameFamilyShape(shape,test)) lastMatches.push({index:i,type:"family"});
  }
- lastMatches=lastMatches.slice(0,3);   // 🔥 max 3 only
- showChecks(shape);
+ results.sort((a,b)=>b.score-a.score);
+ results=results.slice(0,3);
+ showChecks(results);
 }
 
 /* ===== CHECK LINES ===== */
-function showChecks(shape){
+function showChecks(arr){
  checks.innerHTML="";
- if(lastMatches.length==0){checks.innerHTML="<i>No match</i>";return;}
- lastMatches.forEach((m,idx)=>{
+ arr.forEach((m,idx)=>{
   let d=document.createElement("div");
-  d.innerText=(idx+1)+". "+m.type+" match (click)";
-  d.onclick=()=>showOne(shape,idx);
+  d.innerText=(idx+1)+". Auto match (score "+m.score+")";
+  d.onclick=()=>showMatch(m);
   checks.appendChild(d);
  });
 }
 
-/* ===== FAMILY COLOR ===== */
-function famClass(v){let f=fam(v);if(f=="NA") return "";return "f"+f;}
-
-/* ===== POPUP ===== */
-function showOne(shape,n){
- let idx=lastMatches[n].index;
- let h=shape.length;
- let html="<h4>Match "+(n+1)+" - "+lastMatches[n].type+"</h4><table>";
- for(let i=0;i<h+1;i++){
+/* ===== SHOW MATCH ===== */
+function showMatch(m){
+ let html="<table>";
+ for(let i=m.i;i<m.i+5;i++){
   html+="<tr>";
-  if(data[idx+i]){
-   data[idx+i].forEach((v,j)=>{
-    let cls="";
-    if(i<h && shape[i][j]) cls="class='circle "+famClass(v)+"'";
-    html+=`<td ${cls}>${v}</td>`;
-   });
+  for(let j=0;j<6;j++){
+   let cls="";
+   if(j==m.j) cls="class='circle'";
+   html+=`<td ${cls}>${data[i][j]}</td>`;
   }
   html+="</tr>";
  }
@@ -196,7 +149,6 @@ function showOne(shape,n){
  popData.innerHTML=html;
  popup.style.display="block";
 }
-function closePop(){popup.style.display="none"}
 </script>
 </body>
 </html>
