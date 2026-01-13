@@ -10,10 +10,7 @@ td,th{border:1px solid #999;padding:5px;text-align:center;font-weight:600}
 .blank{background:#eee;cursor:pointer}
 
 /* Circle base */
-.circle{
-  border:3px solid red;
-  border-radius:50%;
-}
+.circle{border:3px solid red;border-radius:50%}
 
 /* Family Colors */
 .f12{border-color:#e74c3c}
@@ -30,11 +27,7 @@ td,th{border:1px solid #999;padding:5px;text-align:center;font-weight:600}
 .fFR{border-color:#000}
 
 #checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
-#popup{
- position:fixed;left:0;right:0;bottom:0;
- background:#fff;border-top:3px solid #000;
- display:none;max-height:50%;overflow:auto
-}
+#popup{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
 button{margin:4px}
 </style>
 </head>
@@ -47,7 +40,7 @@ button{margin:4px}
 
 <table id="tbl"></table>
 
-<h3>✔ Check Lines</h3>
+<h3>✔ Check Lines (Top 3 Strongest)</h3>
 <div id="checks"></div>
 
 <div id="popup">
@@ -56,6 +49,7 @@ button{margin:4px}
 </div>
 
 <script>
+/* ===== FAMILY LIST ===== */
 const families={
 "12":["12","17","21","26","62","67","71","76"],
 "13":["13","18","31","36","63","68","81","86"],
@@ -80,7 +74,13 @@ function fam(v){
  for(let k in families) if(families[k].includes(v)) return k;
  return "NA";
 }
+function famClass(v){
+ let f=fam(v);
+ if(f=="NA") return "";
+ return "f"+f;
+}
 
+/* ===== DATA ===== */
 let data=JSON.parse(localStorage.getItem("pdata")||"[]");
 if(data.length==0){
  data=[
@@ -92,6 +92,7 @@ if(data.length==0){
 }
 data=data.map(r=>r.map(norm));
 
+/* ===== DRAW ===== */
 function draw(){
  let t="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
  data.forEach((r,ri)=>{
@@ -107,9 +108,11 @@ function draw(){
 function edit(r,c,el){data[r][c]=norm(el.innerText)}
 draw();
 
+/* ===== ADD / SAVE ===== */
 function addRow(){data.push(["","","","","",""]);draw();}
 function saveData(){localStorage.setItem("pdata",JSON.stringify(data));alert("Saved");}
 
+/* ===== CSV ===== */
 csv.onchange=e=>{
  let fr=new FileReader();
  fr.onload=()=>{
@@ -119,7 +122,9 @@ csv.onchange=e=>{
  fr.readAsText(e.target.files[0]);
 };
 
+/* ===== PATTERN ===== */
 let lastMatches=[];
+let topMatches=[];
 
 function makePattern(r,c){
  let len=5;
@@ -145,6 +150,7 @@ function makePattern(r,c){
  searchPattern(shape);
 }
 
+/* ===== COMPARE ===== */
 function sameShape(a,b){
  for(let i=0;i<a.length;i++)
   for(let j=0;j<6;j++)
@@ -158,6 +164,7 @@ function sameFamilyShape(a,b){
  return true;
 }
 
+/* ===== SEARCH ===== */
 function searchPattern(shape){
  lastMatches=[];
  let h=shape.length;
@@ -179,45 +186,52 @@ function searchPattern(shape){
    test.push(row);
   }
   if(sameShape(shape,test)){
-   lastMatches.push({index:i,type:"exact"});
+   lastMatches.push({index:i,type:"exact",row:i});
   }else if(sameFamilyShape(shape,test)){
-   lastMatches.push({index:i,type:"family"});
+   lastMatches.push({index:i,type:"family",row:i});
   }
  }
  showChecks(shape);
 }
 
+/* ===== STRENGTH ===== */
+function calcStrength(m){
+ let total=data.length;
+ let recency=total-m.row;
+ let freq=lastMatches.filter(x=>x.type==m.type).length;
+ return (freq*10)+(100-recency);
+}
+
+/* ===== CHECK LINES: TOP 3 ===== */
 function showChecks(shape){
  checks.innerHTML="";
- if(lastMatches.length==0){checks.innerHTML="<i>No match</i>";return;}
- lastMatches.forEach((m,idx)=>{
+ if(lastMatches.length==0){
+  checks.innerHTML="<i>No match</i>";
+  return;
+ }
+ lastMatches.forEach(m=>m.strength=calcStrength(m));
+ lastMatches.sort((a,b)=>b.strength-a.strength);
+ topMatches=lastMatches.slice(0,3);
+
+ topMatches.forEach((m,idx)=>{
   let d=document.createElement("div");
-  d.innerText=(idx+1)+". "+m.type+" match (click)";
+  d.innerText=(idx+1)+". "+m.type+" | Strength:"+m.strength+" (click)";
   d.onclick=()=>showOne(shape,idx);
   checks.appendChild(d);
  });
 }
 
-/* ===== FAMILY COLOR HELPER ===== */
-function famClass(v){
- let f=fam(v);
- if(f=="NA") return "";
- return "f"+f;
-}
-
-/* ===== POPUP WITH COLORED CIRCLES ===== */
+/* ===== POPUP ===== */
 function showOne(shape,n){
- let idx=lastMatches[n].index;
+ let idx=topMatches[n].index;
  let h=shape.length;
- let html="<h4>Match "+(n+1)+" - "+lastMatches[n].type+"</h4><table>";
+ let html="<h4>Match "+(n+1)+" - "+topMatches[n].type+"</h4><table>";
  for(let i=0;i<h+1;i++){
   html+="<tr>";
   if(data[idx+i]){
    data[idx+i].forEach((v,j)=>{
     let cls="";
-    if(i<h && shape[i][j]){
-      cls="class='circle "+famClass(v)+"'";
-    }
+    if(i<h && shape[i][j]) cls="class='circle "+famClass(v)+"'";
     html+=`<td ${cls}>${v}</td>`;
    });
   }
@@ -227,7 +241,6 @@ function showOne(shape,n){
  popData.innerHTML=html;
  popup.style.display="block";
 }
-
 function closePop(){popup.style.display="none"}
 </script>
 </body>
