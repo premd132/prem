@@ -10,8 +10,7 @@ td,th{border:1px solid #999;padding:6px;text-align:center;font-weight:600}
 .blank{background:#eee;cursor:pointer}
 .circle{border:3px solid red;border-radius:50%}
 #checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
-#popup{position:fixed;left:0;right:0;bottom:0;background:#fff;
-border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
+#popup{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
 </style>
 </head>
 <body>
@@ -19,17 +18,17 @@ border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
 <h2>Auto Pattern System</h2>
 <table id="tbl"></table>
 
-<h3>✔ Check Lines (Top 3)</h3>
+<h3>Check Lines (Top 3)</h3>
 <div id="checks"></div>
 
 <div id="popup">
-<button onclick="popup.style.display='none'">Close</button>
-<div id="popData"></div>
+  <button onclick="popup.style.display='none'">Close</button>
+  <div id="popData"></div>
 </div>
 
 <script>
 /* ===== FAMILY ===== */
-const families={
+const Families={
 "12":["12","17","21","26","62","67","71","76"],
 "13":["13","18","31","36","63","68","81","86"],
 "14":["14","19","41","46","64","69","91","96"],
@@ -43,20 +42,22 @@ const families={
 "HR":["05","16","27","38","49","50","61","72","83","94"],
 "FR":["00","11","22","33","44","55","66","77","88","99"]
 };
+
 function fam(v){
- for(let k in families) if(families[k].includes(v)) return k;
+ for(let k in Families) if(Families[k].includes(v)) return k;
  return "NA";
 }
 function palti(v){return v[1]+v[0];}
 
 /* ===== DATA ===== */
 let data=[
-["91","69","60","71","85","20"],
-["95","28","11","29","28","18"],
-["47","83","45","80","33","18"],
-["96","25","78","59","30","94"],
-["40","85","95","31","15","**"],
-["**","**","**","**","**","**"]
+ ["91","69","60","71","85","20"],
+ ["95","28","11","29","28","18"],
+ ["47","83","45","80","33","18"],
+ ["96","25","78","59","30","94"],
+ ["08","55","04","14","55","51"],
+ ["71","27","21","23","95","29"],
+ ["**","**","**","**","**","**"]
 ];
 
 /* ===== DRAW ===== */
@@ -74,77 +75,82 @@ function draw(){
 }
 draw();
 
-/* ===== GLOBAL ===== */
-let capturedShape=null;
-let baseJodi=null;
+/* ===== PATTERN ===== */
+let currentShape=null;
+let matches=[];
 
-/* ===== BLANK CLICK ===== */
 function blankClick(r,c){
- capturedShape=[];
- for(let i=r-4;i<=r;i++){
-  if(i<0) continue;
-  let row=[];
-  for(let j=0;j<6;j++){
-   row.push(data[i][j]!="**"?1:0);
-  }
-  capturedShape.push(row);
- }
- alert("Ab kisi bhi jodi par click karke base set karo");
+ let len=5;
+ let start=Math.max(0,r-len+1);
+ let rows=data.slice(start,r+1);
+ let shape=[];
+ rows.forEach(row=>{
+  let fams={};
+  row.forEach(v=>{if(v!="**"){let f=fam(v);fams[f]=(fams[f]||0)+1;}});
+  shape.push(row.map(v=>v=="**"?0:(fams[fam(v)]>1?1:0)));
+ });
+ currentShape=shape;
+ search();
 }
 
-/* ===== BASE CLICK ===== */
 function baseClick(r,c){
- if(!capturedShape) return;
- baseJodi=data[r][c];
- runSearch();
+ if(!currentShape) return;
+ let base=data[r][c];
+ let bf=fam(base);
+ let newShape=currentShape.map(row=>row.slice());
+ newShape[newShape.length-1][c]=1;
+ currentShape=newShape;
+ search();
 }
 
-/* ===== SEARCH ===== */
-function runSearch(){
- let res=[];
- for(let i=0;i<data.length-4;i++){
-  for(let j=0;j<6;j++){
-   let score=0;
-   for(let k=0;k<5;k++){
-    let v=data[i+k][j];
-    if(v=="**") continue;
-    if(v==baseJodi) score+=3;
-    if(palti(v)==baseJodi) score+=2;
-    if(fam(v)==fam(baseJodi)) score+=1;
-   }
-   if(score>0) res.push({i,j,score});
+function sameShape(a,b){
+ for(let i=0;i<a.length;i++)
+  for(let j=0;j<6;j++)
+   if(a[i][j]!=b[i][j]) return false;
+ return true;
+}
+
+function search(){
+ matches=[];
+ let h=currentShape.length;
+ for(let i=0;i<=data.length-h;i++){
+  let test=[];
+  for(let k=0;k<h;k++){
+   let fams={};
+   data[i+k].forEach(v=>{if(v!="**"){let f=fam(v);fams[f]=(fams[f]||0)+1;}});
+   test.push(data[i+k].map(v=>v=="**"?0:(fams[fam(v)]>1?1:0)));
   }
+  if(sameShape(currentShape,test)) matches.push(i);
  }
- res.sort((a,b)=>b.score-a.score);
- res=res.slice(0,3);
- showChecks(res);
+ showChecks();
 }
 
 /* ===== CHECK LINES ===== */
-function showChecks(arr){
+function showChecks(){
  checks.innerHTML="";
- if(arr.length==0){checks.innerHTML="<i>No match</i>";return;}
- arr.forEach((m,idx)=>{
+ matches.slice(0,3).forEach((idx,i)=>{
   let d=document.createElement("div");
-  d.innerText=(idx+1)+". match (score "+m.score+")";
-  d.onclick=()=>showMatch(m);
+  d.innerText=(i+1)+". Match (click)";
+  d.onclick=()=>showMatch(idx);
   checks.appendChild(d);
  });
+ if(matches.length==0) checks.innerHTML="<i>No match</i>";
 }
 
 /* ===== POPUP ===== */
-function showMatch(m){
- let h="<table>";
- for(let i=m.i;i<m.i+5;i++){
-  h+="<tr>";
-  for(let j=0;j<6;j++){
-   let cls=(j==m.j)?"class='circle'":"";
-   h+=`<td ${cls}>${data[i][j]}</td>`;
-  }
-  h+="</tr>";
+function showMatch(idx){
+ let h=currentShape.length;
+ let html="<table>";
+ for(let i=0;i<h;i++){
+  html+="<tr>";
+  data[idx+i].forEach((v,j)=>{
+   let cls=currentShape[i][j]?"class='circle'":"";
+   html+=`<td ${cls}>${v}</td>`;
+  });
+  html+="</tr>";
  }
- h+="</table>";
- popData.innerHTML=h;
+ html+="</table>";
+ popData.innerHTML=html;
  popup.style.display="block";
 }
 </script>
