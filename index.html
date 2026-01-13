@@ -2,45 +2,30 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pattern System</title>
+<title>Anchor Pattern System</title>
 <style>
 body{font-family:Arial}
 table{border-collapse:collapse;font-size:13px}
 td,th{border:1px solid #999;padding:5px;text-align:center;font-weight:600}
 .blank{background:#eee;cursor:pointer}
-
-/* Circle base */
+.anchor{background:#ffeaa7}
 .circle{border:3px solid red;border-radius:50%}
-
-/* Family Colors */
-.f12{border-color:#e74c3c}
-.f13{border-color:#9b59b6}
-.f14{border-color:#3498db}
-.f15{border-color:#16a085}
-.f23{border-color:#f39c12}
-.f24{border-color:#d35400}
-.f25{border-color:#1abc9c}
-.f34{border-color:#2c3e50}
-.f35{border-color:#27ae60}
-.f45{border-color:#8e44ad}
-.fHR{border-color:#c0392b}
-.fFR{border-color:#000}
-
 #checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
 #popup{position:fixed;left:0;right:0;bottom:0;background:#fff;border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
-button{margin:4px}
 </style>
 </head>
 <body>
 
-<h2>Pattern System</h2>
+<h2>Anchor Pattern System</h2>
 <input type="file" id="csv">
 <button onclick="addRow()">Add Row</button>
 <button onclick="saveData()">Save</button>
 
+<p><b>Use:</b> Blank cell click → then click any jodi = base jodi</p>
+
 <table id="tbl"></table>
 
-<h3>✔ Check Lines (Top 3 Strongest)</h3>
+<h3>✔ Check Lines</h3>
 <div id="checks"></div>
 
 <div id="popup">
@@ -64,21 +49,8 @@ const families={
 "HR":["05","16","27","38","49","50","61","72","83","94"],
 "FR":["00","11","22","33","44","55","66","77","88","99"]
 };
-
-function norm(v){
- if(v==""||v=="**")return "**";
- v=String(v);
- return v.length==1?"0"+v:v;
-}
-function fam(v){
- for(let k in families) if(families[k].includes(v)) return k;
- return "NA";
-}
-function famClass(v){
- let f=fam(v);
- if(f=="NA") return "";
- return "f"+f;
-}
+function fam(v){for(let k in families) if(families[k].includes(v)) return k; return "NA";}
+function norm(v){if(v==""||v=="**")return "**";v=String(v);return v.length==1?"0"+v:v;}
 
 /* ===== DATA ===== */
 let data=JSON.parse(localStorage.getItem("pdata")||"[]");
@@ -92,156 +64,112 @@ if(data.length==0){
 }
 data=data.map(r=>r.map(norm));
 
+let activeBlank=null;
+let matches=[];
+
 /* ===== DRAW ===== */
 function draw(){
  let t="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
  data.forEach((r,ri)=>{
   t+="<tr>";
   r.forEach((c,ci)=>{
-   if(c=="**") t+=`<td class='blank' onclick="makePattern(${ri},${ci})">**</td>`;
-   else t+=`<td contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
+   let cls="";
+   if(activeBlank && activeBlank.r==ri && activeBlank.c==ci) cls="anchor";
+   t+=`<td class="${c=="**"?"blank":""} ${cls}" 
+        onclick="${c=="**"?"selectBlank":"selectCell"}(${ri},${ci})">${c}</td>`;
   });
   t+="</tr>";
  });
  tbl.innerHTML=t;
 }
-function edit(r,c,el){data[r][c]=norm(el.innerText)}
 draw();
 
-/* ===== ADD / SAVE ===== */
 function addRow(){data.push(["","","","","",""]);draw();}
 function saveData(){localStorage.setItem("pdata",JSON.stringify(data));alert("Saved");}
 
-/* ===== CSV ===== */
 csv.onchange=e=>{
  let fr=new FileReader();
- fr.onload=()=>{
-  data=fr.result.trim().split("\n").map(r=>r.split(",").map(norm));
-  draw();
- };
+ fr.onload=()=>{data=fr.result.trim().split("\n").map(r=>r.split(",").map(norm));draw();};
  fr.readAsText(e.target.files[0]);
 };
 
-/* ===== PATTERN ===== */
-let lastMatches=[];
-let topMatches=[];
-
-function makePattern(r,c){
- let len=5;
- let start=Math.max(0,r-len+1);
- let rows=data.slice(start,r+1);
-
- let shape=[];
- for(let i=0;i<rows.length;i++){
-  let fams={};
-  rows[i].forEach(v=>{
-   if(v!="**"){
-    let f=fam(v);
-    fams[f]=(fams[f]||0)+1;
-   }
-  });
-  let rowShape=[];
-  rows[i].forEach(v=>{
-   if(v=="**") rowShape.push(0);
-   else rowShape.push(fams[fam(v)]>1?1:0);
-  });
-  shape.push(rowShape);
- }
- searchPattern(shape);
+/* ===== STEP 1: BLANK SELECT ===== */
+function selectBlank(r,c){
+ activeBlank={r,c};
+ matches=[];
+ checks.innerHTML="<i>Now click any jodi as base</i>";
+ draw();
 }
 
-/* ===== COMPARE ===== */
-function sameShape(a,b){
- for(let i=0;i<a.length;i++)
-  for(let j=0;j<6;j++)
-   if(a[i][j]!=b[i][j]) return false;
- return true;
-}
-function sameFamilyShape(a,b){
- for(let i=0;i<a.length;i++)
-  for(let j=0;j<6;j++)
-   if(a[i][j]==1 && b[i][j]!=1) return false;
- return true;
+/* ===== STEP 2: BASE JODI ===== */
+function selectCell(r,c){
+ if(!activeBlank) return;
+ let baseFam=fam(data[r][c]);
+
+ // pattern around base: up,down,left,right
+ let shape={
+  up: r>0 ? fam(data[r-1][c]) : null,
+  down: r<data.length-1 ? fam(data[r+1][c]) : null,
+  left: c>0 ? fam(data[r][c-1]) : null,
+  right: c<5 ? fam(data[r][c+1]) : null,
+  center: baseFam
+ };
+
+ searchAnchor(shape);
 }
 
-/* ===== SEARCH ===== */
-function searchPattern(shape){
- lastMatches=[];
- let h=shape.length;
- for(let i=0;i<=data.length-h;i++){
-  let test=[];
-  for(let k=0;k<h;k++){
-   let fams={};
-   data[i+k].forEach(v=>{
-    if(v!="**"){
-     let f=fam(v);
-     fams[f]=(fams[f]||0)+1;
-    }
-   });
-   let row=[];
-   data[i+k].forEach(v=>{
-    if(v=="**") row.push(0);
-    else row.push(fams[fam(v)]>1?1:0);
-   });
-   test.push(row);
-  }
-  if(sameShape(shape,test)){
-   lastMatches.push({index:i,type:"exact",row:i});
-  }else if(sameFamilyShape(shape,test)){
-   lastMatches.push({index:i,type:"family",row:i});
+/* ===== SEARCH WHOLE RECORD ===== */
+function searchAnchor(shape){
+ matches=[];
+ for(let i=0;i<data.length;i++){
+  for(let j=0;j<6;j++){
+   let f=fam(data[i][j]);
+   if(f!=shape.center) continue;
+
+   let ok=true;
+   if(shape.up && (i==0 || fam(data[i-1][j])!=shape.up)) ok=false;
+   if(shape.down && (i==data.length-1 || fam(data[i+1][j])!=shape.down)) ok=false;
+   if(shape.left && (j==0 || fam(data[i][j-1])!=shape.left)) ok=false;
+   if(shape.right && (j==5 || fam(data[i][j+1])!=shape.right)) ok=false;
+
+   if(ok) matches.push({r:i,c:j,shape});
   }
  }
- showChecks(shape);
+ showChecks();
 }
 
-/* ===== STRENGTH ===== */
-function calcStrength(m){
- let total=data.length;
- let recency=total-m.row;
- let freq=lastMatches.filter(x=>x.type==m.type).length;
- return (freq*10)+(100-recency);
-}
-
-/* ===== CHECK LINES: TOP 3 ===== */
-function showChecks(shape){
+/* ===== CHECK LINES ===== */
+function showChecks(){
  checks.innerHTML="";
- if(lastMatches.length==0){
-  checks.innerHTML="<i>No match</i>";
-  return;
- }
- lastMatches.forEach(m=>m.strength=calcStrength(m));
- lastMatches.sort((a,b)=>b.strength-a.strength);
- topMatches=lastMatches.slice(0,3);
-
- topMatches.forEach((m,idx)=>{
+ if(matches.length==0){checks.innerHTML="<i>No match</i>";return;}
+ matches.forEach((m,idx)=>{
   let d=document.createElement("div");
-  d.innerText=(idx+1)+". "+m.type+" | Strength:"+m.strength+" (click)";
-  d.onclick=()=>showOne(shape,idx);
+  d.innerText=(idx+1)+". Match at row "+(m.r+1)+" col "+(m.c+1);
+  d.onclick=()=>showMatch(idx);
   checks.appendChild(d);
  });
 }
 
-/* ===== POPUP ===== */
-function showOne(shape,n){
- let idx=topMatches[n].index;
- let h=shape.length;
- let html="<h4>Match "+(n+1)+" - "+topMatches[n].type+"</h4><table>";
- for(let i=0;i<h+1;i++){
+/* ===== POPUP + MARKING ===== */
+function showMatch(n){
+ let m=matches[n];
+ let html="<h4>Anchor Match</h4><table>";
+ for(let i=m.r-1;i<=m.r+1;i++){
+  if(i<0||i>=data.length) continue;
   html+="<tr>";
-  if(data[idx+i]){
-   data[idx+i].forEach((v,j)=>{
-    let cls="";
-    if(i<h && shape[i][j]) cls="class='circle "+famClass(v)+"'";
-    html+=`<td ${cls}>${v}</td>`;
-   });
-  }
+  data[i].forEach((v,j)=>{
+   let cls="";
+   if(i==m.r && j==m.c) cls="class='circle'";
+   html+=`<td ${cls}>${v}</td>`;
+  });
   html+="</tr>";
  }
  html+="</table>";
  popData.innerHTML=html;
  popup.style.display="block";
 }
-function closePop(){popup.style.display="none"}
+
+function closePop(){popup.style.display="none";}
 </script>
 </body>
 </html>
