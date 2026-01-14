@@ -33,6 +33,12 @@ button{margin:5px}
 <div id="super"></div>
 
 <script>
+/* ===== DOM FIX ===== */
+const tbl = document.getElementById("tbl");
+const checks = document.getElementById("checks");
+const ai = document.getElementById("ai");
+const superBox = document.getElementById("super");
+
 function pad2(d){ return String(d).length==1 ? "0"+d : d; }
 
 /* FAMILY */
@@ -215,7 +221,7 @@ function superAdvance(){
    }
   });
  });
- if(!pool.length){super.innerHTML="No final data";return;}
+ if(!pool.length){superBox.innerHTML="No final data";return;}
  let jc={},fc={},dc={};
  pool.forEach(v=>{
   jc[v]=(jc[v]||0)+1;
@@ -226,9 +232,12 @@ function superAdvance(){
  let topJ=Object.entries(jc).sort((a,b)=>b[1]-a[1])[0];
  let topF=Object.entries(fc).sort((a,b)=>b[1]-a[1])[0];
  let topD=Object.entries(dc).sort((a,b)=>b[1]-a[1]).slice(0,3);
- let html="Total: "+pool.length+"<br>Top Jodi: "+topJ[0]+" ("+topJ[1]+")<br>Top Family: "+topF[0]+" ("+topF[1]+")<br>Single Ank:<br>";
+ let html="Total: "+pool.length+
+ "<br>Top Jodi: "+topJ[0]+" ("+topJ[1]+")"+
+ "<br>Top Family: "+topF[0]+" ("+topF[1]+")"+
+ "<br>Single Ank:<br>";
  topD.forEach(d=>html+=d[0]+" ("+d[1]+") ");
- super.innerHTML=html;
+ superBox.innerHTML=html;
 }
 </script>
 </body>
