@@ -2,26 +2,30 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Advance Pattern System</title>
+<title>Super Advance Pattern System</title>
 <style>
 body{font-family:Arial}
 table{border-collapse:collapse;font-size:13px}
 td,th{border:1px solid #999;padding:5px;text-align:center;font-weight:600}
 .blank{background:#eee;cursor:pointer}
-#ai{background:#eef;padding:10px;margin-top:10px;font-weight:600}
-button{margin:5px}
+.circle{border:3px solid red;border-radius:50%}
+#checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
+#ai,#super{background:#eef;padding:8px;margin-top:6px;font-weight:600}
 </style>
 </head>
 <body>
 
-<h2>Advance Pattern System (Mon–Sat)</h2>
-<input type="file" id="csv">
-<button onclick="addRow()">Add Row</button>
-<button onclick="saveData()">Save</button>
+<h2>Super Advance Pattern System</h2>
 <table id="tbl"></table>
 
-<h3>🤖 Advance AI Suggestion</h3>
-<div id="ai">Blank cell par click karo</div>
+<h3>✔ Auto Check Lines (Top 3)</h3>
+<div id="checks"></div>
+
+<h3>🤖 AI Result</h3>
+<div id="ai"></div>
+
+<h3>🚀 Super Advance Final</h3>
+<div id="super"></div>
 
 <script>
 /* ===== FAMILY ===== */
@@ -41,31 +45,40 @@ const families={
 };
 function fam(v){for(let k in families) if(families[k].includes(v)) return k; return "NA";}
 function norm(v){if(v==""||v=="**")return "**";v=String(v);return v.length==1?"0"+v:v;}
+function smartMatch(a,b){
+ if(a=="**"||b=="**") return false;
+ if(a===b) return true;
+ if(a[0]+a[1]===b||b[0]+b[1]===a) return true;
+ return fam(a)===fam(b);
+}
 
 /* ===== DATA ===== */
-let data=JSON.parse(localStorage.getItem("pdata")||"null");
-if(!data){
- data=[
+let data=[
  ["51","91","41","57","19","22"],
  ["05","90","74","06","19","88"],
  ["90","34","82","09","28","15"],
  ["46","33","91","15","22","67"],
+ ["11","72","48","35","64","93"],
  ["**","**","**","**","**","**"]
- ];
-}
-data=data.map(r=>r.map(norm));
-let targetCol=null;
+].map(r=>r.map(norm));
 
 /* ===== DRAW ===== */
+let activeMark=null;
 function draw(){
  let h="<tr><th>Mon</th><th>Tue</th><th>Wed</th><th>Thu</th><th>Fri</th><th>Sat</th></tr>";
  data.forEach((r,ri)=>{
   h+="<tr>";
   r.forEach((c,ci)=>{
+   let cls="";
+   if(activeMark){
+    let {start,shape}=activeMark;
+    let i=ri-start;
+    if(i>=0 && i<shape.length && shape[i][ci]) cls="circle";
+   }
    if(c=="**")
-    h+=`<td class="blank" onclick="makeAdvance(${ri},${ci})" contenteditable oninput="edit(${ri},${ci},this)">**</td>`;
+    h+=`<td class="blank ${cls}" onclick="autoPattern(${ri},${ci})">${c}</td>`;
    else
-    h+=`<td contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
+    h+=`<td class="${cls}">${c}</td>`;
   });
   h+="</tr>";
  });
@@ -73,71 +86,113 @@ function draw(){
 }
 draw();
 
-function edit(r,c,el){data[r][c]=norm(el.innerText.trim());}
-function addRow(){data.push(["","","","","",""].map(norm));draw();}
-function saveData(){localStorage.setItem("pdata",JSON.stringify(data));alert("Saved");}
+/* ===== AUTO PATTERN ===== */
+let bestPatterns=[],targetCol=null;
 
-csv.onchange=e=>{
- let fr=new FileReader();
- fr.onload=()=>{
-  data=fr.result.trim().split("\n").map(r=>r.split(",").map(v=>{
-   v=v.trim(); if(v==""||v=="*"||v=="**") return "**"; return norm(v);
-  }));
-  draw();
- };
- fr.readAsText(e.target.files[0]);
-};
-
-/* ===== ADVANCE PATTERN ===== */
-/*
- Template:
- A = (r-4, Mon=0)
- B = (r-2, Wed=2)
- C = (r-2, Tue=1)  // left of B
- Result = next row same column as blank
-*/
-function makeAdvance(r,c){
+function autoPattern(r,c){
  targetCol=c;
- if(r<4){ ai.innerHTML="Kam data hai"; return; }
+ bestPatterns=[];
+ let templates=[
+  [[0,0],[1,1],[2,2],[3,3]],
+  [[0,5],[1,4],[2,3],[3,2]],
+  [[0,0],[1,0],[2,0],[3,0]],
+  [[0,1],[1,1],[2,1],[3,1]],
+  [[0,2],[1,2],[2,2],[3,2]]
+ ];
 
- let A=data[r-4][0];
- let B=data[r-2][2];
- let C=data[r-2][1];
- if(A=="**"||B=="**"||C=="**"){ ai.innerHTML="Reference blank hai"; return; }
-
- let key=fam(A)+"-"+fam(B)+"-"+fam(C);
-
- // Mine old data
- let results=[];
- for(let i=4;i<data.length-1;i++){
-  let A1=data[i-4][0];
-  let B1=data[i-2][2];
-  let C1=data[i-2][1];
-  if(A1=="**"||B1=="**"||C1=="**") continue;
-  let k1=fam(A1)+"-"+fam(B1)+"-"+fam(C1);
-  if(k1==key){
-   let v=data[i+1][targetCol];
-   if(v!="**") results.push(v);
+ templates.forEach(t=>{
+  let shape=[];
+  for(let k=0;k<t.length;k++){
+   let rr=r-4+k;
+   if(rr<0) return;
+   let row=new Array(6).fill(0);
+   let cc=t[k][1];
+   let base=data[r-1][c];
+   let v=data[rr][cc];
+   if(v!="**" && smartMatch(v,base)) row[cc]=1;
+   shape.push(row);
   }
- }
-
- if(results.length==0){
-  ai.innerHTML="Is structure ka purana record nahi mila";
-  return;
- }
-
- // Count
- let count={};
- results.forEach(v=>count[v]=(count[v]||0)+1);
- let sorted=Object.entries(count).sort((a,b)=>b[1]-a[1]);
-
- let html="Advance Structure Match<br>";
- html+="Key: "+key+"<br><br>";
- html+="Top Guess:<br>";
- sorted.slice(0,3).forEach(x=>{
-  html+=x[0]+" ("+x[1]+" baar)<br>";
+  let matches=search(shape,data[r-1][c]);
+  if(matches.length>=3) bestPatterns.push({shape,matches});
  });
- ai.innerHTML=html;
+
+ bestPatterns.sort((a,b)=>b.matches.length-a.matches.length);
+ bestPatterns=bestPatterns.slice(0,3);
+ showChecks();
+ superAdvance();
+}
+
+/* ===== SEARCH ===== */
+function search(shape,base){
+ let res=[];
+ let h=shape.length;
+ for(let i=0;i<=data.length-h;i++){
+  let ok=true;
+  for(let k=0;k<h;k++){
+   for(let j=0;j<6;j++){
+    if(shape[k][j] && !smartMatch(data[i+k][j],base)){ok=false;break;}
+   }
+   if(!ok) break;
+  }
+  if(ok) res.push({index:i});
+ }
+ return res;
+}
+
+/* ===== CHECK LINES ===== */
+function showChecks(){
+ checks.innerHTML="";
+ ai.innerHTML="";
+ if(bestPatterns.length==0){checks.innerHTML="No strong pattern";return;}
+ bestPatterns.forEach((p,i)=>{
+  let d=document.createElement("div");
+  d.innerText=(i+1)+". Match ("+p.matches.length+")";
+  d.onclick=()=>showOne(p);
+  checks.appendChild(d);
+ });
+}
+
+/* ===== DRAW ONE ===== */
+function showOne(p){
+ activeMark={start:p.matches[0].index,shape:p.shape};
+ draw();
+ let out="Results after this pattern:<br>";
+ let h=p.shape.length;
+ p.matches.forEach(m=>{
+  let nr=m.index+h;
+  if(nr<data.length){
+   let v=data[nr][targetCol];
+   if(v!="**") out+=v+" ";
+  }
+ });
+ ai.innerHTML=out;
+}
+
+/* ===== SUPER ADVANCE ===== */
+function superAdvance(){
+ let pool=[];
+ bestPatterns.forEach(p=>{
+  let h=p.shape.length;
+  p.matches.forEach(m=>{
+   let nr=m.index+h;
+   if(nr<data.length){
+    let v=data[nr][targetCol];
+    if(v!="**") pool.push(v);
+   }
+  });
+ });
+ if(pool.length==0){super.innerHTML="No final data";return;}
+ let jc={},fc={};
+ pool.forEach(v=>{
+  jc[v]=(jc[v]||0)+1;
+  let f=fam(v); fc[f]=(fc[f]||0)+1;
+ });
+ let topJ=Object.entries(jc).sort((a,b)=>b[1]-a[1])[0];
+ let topF=Object.entries(fc).sort((a,b)=>b[1]-a[1])[0];
+ super.innerHTML=
+ "Total Samples: "+pool.length+"<br>"+
+ "Top Jodi: "+topJ[0]+" ("+topJ[1]+")<br>"+
+ "Top Family: "+topF[0]+" ("+topF[1]+")";
 }
 </script>
 </body>
