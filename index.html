@@ -7,9 +7,24 @@
 body{font-family:Arial}
 table{border-collapse:collapse;font-size:13px}
 td,th{border:1px solid #999;padding:6px;text-align:center;font-weight:600}
+td[contenteditable]{background:#fffbe6}
 .blank{background:#eee;cursor:pointer}
-td[contenteditable]{background:#fff8dc}
 .circle{border:3px solid red;border-radius:50%}
+
+/* family colors */
+.f12{border-color:#e74c3c}
+.f13{border-color:#9b59b6}
+.f14{border-color:#3498db}
+.f15{border-color:#16a085}
+.f23{border-color:#f39c12}
+.f24{border-color:#d35400}
+.f25{border-color:#1abc9c}
+.f34{border-color:#2c3e50}
+.f35{border-color:#27ae60}
+.f45{border-color:#8e44ad}
+.fHR{border-color:#c0392b}
+.fFR{border-color:#000}
+
 #checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
 #popup{position:fixed;left:0;right:0;bottom:0;background:#fff;
 border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
@@ -54,13 +69,19 @@ function fam(v){
  for(let k in families) if(families[k].includes(v)) return k;
  return "NA";
 }
+function famClass(v){
+ let f=fam(v);
+ if(f=="NA") return "";
+ return "f"+f;
+}
+function palti(v){ return v[1]+v[0]; }
 function norm(v){
  if(v==""||v=="**") return "**";
  v=String(v);
  return v.length==1?"0"+v:v;
 }
 
-/* ===== DATA LOAD ===== */
+/* ===== DATA ===== */
 let data=JSON.parse(localStorage.getItem("pdata")||"null");
 if(!data){
  data=[
@@ -80,8 +101,10 @@ function draw(){
  data.forEach((r,ri)=>{
   h+="<tr>";
   r.forEach((c,ci)=>{
-   if(c=="**") h+=`<td class='blank' onclick="makePattern(${ri},${ci})">**</td>`;
-   else h+=`<td contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
+   if(c=="**")
+    h+=`<td class="blank" contenteditable oninput="edit(${ri},${ci},this)" onclick="makePattern(${ri},${ci})">**</td>`;
+   else
+    h+=`<td contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
   });
   h+="</tr>";
  });
@@ -103,7 +126,7 @@ function saveData(){
  alert("Data Saved");
 }
 
-/* ===== CSV UPLOAD ===== */
+/* ===== CSV ===== */
 csvFile.onchange=e=>{
  let fr=new FileReader();
  fr.onload=()=>{
@@ -161,7 +184,7 @@ function searchPattern(shape){
  showChecks(shape);
 }
 
-/* ===== CHECK LINES ===== */
+/* ===== CHECK LINES (Top 3) ===== */
 function showChecks(shape){
  checks.innerHTML="";
  if(lastMatches.length==0){checks.innerHTML="<i>No match</i>";return;}
@@ -180,8 +203,9 @@ function showOne(shape,idx){
  for(let i=0;i<h;i++){
   html+="<tr>";
   data[idx+i].forEach((v,j)=>{
-   let cls=shape[i][j]?"class='circle'":"";
-   html+=`<td ${cls}>${v}</td>`;
+   let cls="";
+   if(shape[i][j]) cls="circle "+famClass(v);
+   html+=`<td class="${cls}">${v}</td>`;
   });
   html+="</tr>";
  }
