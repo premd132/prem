@@ -8,15 +8,22 @@ body{font-family:Arial}
 table{border-collapse:collapse;font-size:13px}
 td,th{border:1px solid #999;padding:6px;text-align:center;font-weight:600}
 .blank{background:#eee;cursor:pointer}
+td[contenteditable]{background:#fff8dc}
 .circle{border:3px solid red;border-radius:50%}
 #checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
 #popup{position:fixed;left:0;right:0;bottom:0;background:#fff;
 border-top:3px solid #000;display:none;max-height:50%;overflow:auto}
+button{margin:4px}
 </style>
 </head>
 <body>
 
 <h2>Auto Pattern System</h2>
+
+<input type="file" id="csvFile">
+<button onclick="addRow()">Add Row</button>
+<button onclick="saveData()">Save</button>
+
 <table id="tbl"></table>
 
 <h3>✔ Check Lines (Top 3)</h3>
@@ -47,51 +54,25 @@ function fam(v){
  for(let k in families) if(families[k].includes(v)) return k;
  return "NA";
 }
+function norm(v){
+ if(v==""||v=="**") return "**";
+ v=String(v);
+ return v.length==1?"0"+v:v;
+}
 
-/* ===== REAL STYLE DATA ===== */
-let data=[
-["91","69","60","71","85","20"],
-["95","28","11","29","28","18"],
-["47","83","45","80","33","18"],
-["96","25","78","59","30","94"],
-["08","55","04","14","55","51"],
-["71","27","21","23","95","29"],
-["57","65","06","97","93","53"],
-["21","01","80","39","20","01"],
-["49","89","83","29","**","44"],
-["82","01","14","33","70","13"],
-["33","00","10","79","41","96"],
-["12","04","66","61","62","02"],
-["91","31","44","63","23","93"],
-["40","96","62","80","15","76"],
-["35","91","44","08","34","46"],
-["43","14","25","69","05","00"],
-["98","04","03","62","47","45"],
-["82","00","74","83","08","57"],
-["99","00","47","21","72","26"],
-["30","61","16","81","65","38"],
-["34","62","21","02","23","24"],
-["11","89","40","76","44","75"],
-["07","42","48","33","72","34"],
-["53","81","81","48","31","64"],
-["06","14","02","15","89","75"],
-["81","88","88","41","48","77"],
-["44","85","28","72","36","13"],
-["68","10","05","71","82","61"],
-["05","08","76","67","03","58"],
-["06","11","09","09","68","69"],
-["83","91","75","42","**","72"],
-["54","75","14","39","68","43"],
-["68","73","20","05","40","38"],
-["25","75","61","43","17","24"],
-["14","63","87","01","51","58"],
-["99","42","44","16","56","38"],
-["52","58","49","69","79","71"],
-["71","79","73","87","80","19"],
-["12","96","79","36","84","97"],
-["40","85","95","31","15","**"],
-["**","**","**","**","**","**"]
-];
+/* ===== DATA LOAD ===== */
+let data=JSON.parse(localStorage.getItem("pdata")||"null");
+if(!data){
+ data=[
+ ["91","69","60","71","85","20"],
+ ["95","28","11","29","28","18"],
+ ["47","83","45","80","33","18"],
+ ["96","25","78","59","30","94"],
+ ["08","55","04","14","55","51"],
+ ["71","27","21","23","95","29"],
+ ["**","**","**","**","**","**"]
+ ];
+}
 
 /* ===== DRAW ===== */
 function draw(){
@@ -100,13 +81,38 @@ function draw(){
   h+="<tr>";
   r.forEach((c,ci)=>{
    if(c=="**") h+=`<td class='blank' onclick="makePattern(${ri},${ci})">**</td>`;
-   else h+=`<td>${c}</td>`;
+   else h+=`<td contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
   });
   h+="</tr>";
  });
  tbl.innerHTML=h;
 }
 draw();
+
+function edit(r,c,el){
+ data[r][c]=norm(el.innerText.trim());
+}
+
+/* ===== ADD / SAVE ===== */
+function addRow(){
+ data.push(["","","","","",""].map(norm));
+ draw();
+}
+function saveData(){
+ localStorage.setItem("pdata",JSON.stringify(data));
+ alert("Data Saved");
+}
+
+/* ===== CSV UPLOAD ===== */
+csvFile.onchange=e=>{
+ let fr=new FileReader();
+ fr.onload=()=>{
+  data=fr.result.trim().split("\n")
+   .map(r=>r.split(",").map(norm));
+  draw();
+ };
+ fr.readAsText(e.target.files[0]);
+};
 
 /* ===== PATTERN ===== */
 let lastMatches=[];
