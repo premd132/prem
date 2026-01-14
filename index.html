@@ -97,7 +97,9 @@ function draw(){
     if(i>=0&&i<shape.length&&shape[i][ci]) cls="circle "+famClass(c);
    }
    if(c=="**")
-    h+=`<td class="blank" onclick="makePattern(${ri},${ci})">**</td>`;
+  h+=`<td class="blank" contenteditable 
+        oninput="edit(${ri},${ci},this)" 
+        onclick="makePattern(${ri},${ci})">**</td>`;
    else
     h+=`<td class="${cls}" contenteditable oninput="edit(${ri},${ci},this)">${c}</td>`;
   });
