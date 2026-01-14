@@ -33,7 +33,6 @@ button{margin:5px}
 <div id="super"></div>
 
 <script>
-/* ===== HELPERS ===== */
 function pad2(d){ return String(d).length==1 ? "0"+d : d; }
 
 /* ===== FAMILY ===== */
@@ -111,6 +110,8 @@ csv.onchange=e=>{
     v=v.trim(); if(v==""||v=="*"||v=="**") return "**"; return norm(v);
    })
   );
+  // AUTO BLANK ROW ADD
+  data.push(["**","**","**","**","**","**"]);
   draw();
  };
  fr.readAsText(e.target.files[0]);
