@@ -61,7 +61,7 @@ function addRow(arr){
   let td=document.createElement("td");
   td.contentEditable=true;
   td.oninput=()=>td.innerText=norm(td.innerText.trim());
-  td.innerText=arr?arr[i]||"":"");
+  td.innerText = arr ? (arr[i] ? norm(arr[i].trim()) : "") : "";
   tr.appendChild(td);
  }
  tb.appendChild(tr);
@@ -70,11 +70,22 @@ addRow();
 
 // ---- CSV ----
 function loadCSV(e){
- let f=e.target.files[0];if(!f)return;
+ let f=e.target.files[0]; if(!f) return;
  let r=new FileReader();
  r.onload=()=>{
   tb.innerHTML="";
-  r.result.split(/\r?\n/).forEach(l=>{if(l.trim())addRow(l.split(","));});
+  let lines = r.result.split(/
+?
+/);
+  lines.forEach(l=>{
+    if(l.trim()!==""){
+      let parts = l.split(",");
+      addRow(parts);
+    }
+  });
+ };
+ r.readAsText(f);
+});
  };
  r.readAsText(f);
 }
