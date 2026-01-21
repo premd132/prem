@@ -207,59 +207,93 @@ function showOne(shape,n){
  popup.style.display="block";
 }
 
-/* AI + FUTURE AI (FIXED) */
 function showAISuggestions(shape){
- let digitCount={},jodiCount={};
+ let digitCount={},jodiCount={},familyCount={};
+
+ /* ===== NORMAL AI (Pattern ke andar) ===== */
  topMatches.forEach(m=>{
   let idx=m.index;
   for(let i=0;i<shape.length;i++){
-   for(let j=0;j<5;j++){
+   for(let j=0;j<data[0].length;j++){
     if(shape[i][j]){
      let v=data[idx+i][j];
      if(v!="**"){
       jodiCount[v]=(jodiCount[v]||0)+1;
       digitCount[v[0]]=(digitCount[v[0]]||0)+1;
       digitCount[v[1]]=(digitCount[v[1]]||0)+1;
+      let f=fam(v);
+      if(f!="NA") familyCount[f]=(familyCount[f]||0)+1;
      }
     }
    }
   }
  });
- let topD=Object.entries(digitCount).sort((a,b)=>b[1]-a[1]).slice(0,2);
- let topJ=Object.entries(jodiCount).sort((a,b)=>b[1]-a[1]).slice(0,2);
- ai.innerHTML="Top 2 Single Ank:<br>"+topD.map(d=>d[0]).join(",")+
-              "<br><br>Top 2 Jodi:<br>"+topJ.map(j=>j[0]).join(",");
 
- /* ==== FUTURE AI FIX ==== */
+ let topJ=Object.entries(jodiCount).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+ let topD=Object.entries(digitCount).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+
+ ai.innerHTML=
+  "Top 2 Jodi:<br>"+topJ.join(",")+
+  "<br><br>Top 2 Single Ank:<br>"+topD.join(",");
+
+ /* ===== STRONG FUTURE AI ===== */
  let pool=[],h=shape.length;
+
  topMatches.forEach(m=>{
   let nr=m.index+h;
   while(nr<data.length){
    let row=data[nr];
-   let cols=[targetCol,targetCol-1,targetCol+1];
    let found=false;
+   let cols=[targetCol,targetCol-1,targetCol+1];
+
    cols.forEach(c=>{
-    if(c>=0 && c<5){
-     if(row[c]!="**"){pool.push(row[c]);found=true;}
+    if(c>=0 && c<row.length){
+     let v=row[c];
+     if(v!="**"){
+      pool.push(v);
+      found=true;
+     }
     }
    });
+
    if(found) break;
    nr++;
   }
  });
 
- if(!pool.length){future.innerHTML="No future data";return;}
- let jc={},dc={};
+ if(pool.length==0){
+  future.innerHTML="No future data";
+  return;
+ }
+
+ let jc={},dc={},fc={};
+
  pool.forEach(v=>{
-  jc[v]=(jc[v]||0)+1;
+  jc[v]=(jc[v]||0)+3;                 // same jodi
+  let p=palti(v);
+  jc[p]=(jc[p]||0)+2;                 // palti weight
+
   dc[v[0]]=(dc[v[0]]||0)+1;
   dc[v[1]]=(dc[v[1]]||0)+1;
+
+  let f=fam(v);
+  if(f!="NA") fc[f]=(fc[f]||0)+2;     // family weight
  });
- let fJ=Object.entries(jc).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]).join(",");
- let fD=Object.entries(dc).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]).join(",");
- future.innerHTML="Strong 2 Jodi:<br>"+fJ+
-                  "<br><br>Strong 2 Single Ank:<br>Open to close<br>"+fD;
-}
+
+ /* Family based boost */
+ Object.keys(fc).forEach(f=>{
+  families[f].forEach(j=>{
+   jc[j]=(jc[j]||0)+fc[f];
+  });
+ });
+
+ let fJ=Object.entries(jc).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+ let fD=Object.entries(dc).sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+
+ future.innerHTML=
+  "Strong 2 Jodi:<br>"+fJ.join(",")+
+  "<br><br>Strong 2 Single Ank:<br>Open to close<br>"+fD.join(",");
+        }
 </script>
 </body>
 </html>
