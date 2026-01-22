@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Jodi Pattern Analysis Engine</title>
+<title>Pattern Engine – Level 2</title>
 
 <style>
 body{font-family:Arial}
@@ -11,13 +11,13 @@ td,th{border:1px solid #999;padding:5px;text-align:center;font-weight:600}
 td[contenteditable]{background:#fffbe6}
 .blank{background:#eee;cursor:pointer}
 .circle{border:3px solid red;border-radius:50%}
-.arrow{position:absolute;border:2px solid red}
+.best{background:#d4ffd4}
 #checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
-#ai{background:#eef;padding:8px;margin-top:6px;font-weight:600}
+#ai,#future{background:#eef;padding:8px;margin-top:6px;font-weight:600}
 #popup{
  position:fixed;left:0;right:0;bottom:0;
  background:#fff;border-top:3px solid #000;
- display:none;max-height:50%;overflow:auto
+ display:none;max-height:55%;overflow:auto
 }
 button{margin:4px}
 </style>
@@ -25,11 +25,11 @@ button{margin:4px}
 
 <body>
 
-<h2>🧠 Jodi Pattern Analysis Engine</h2>
+<h2>🧠 Pattern Engine – Level 2</h2>
 
 <input type="file" id="csv">
 <button onclick="addRow()">Add Row</button>
-<button onclick="deleteRow()">Delete Selected Row</button>
+<button onclick="deleteRow()">Delete Row</button>
 <button onclick="saveData()">Save</button>
 
 <table id="tbl"></table>
@@ -37,17 +37,20 @@ button{margin:4px}
 <h3>✔ Check Lines (Top 3–4)</h3>
 <div id="checks"></div>
 
-<h3>🤖 AI Result (Jodi Based)</h3>
+<h3>🤖 AI Analysis</h3>
 <div id="ai"></div>
 
+<h3>🔮 Future AI (Strong)</h3>
+<div id="future"></div>
+
 <div id="popup">
- <button onclick="popup.style.display='none'">Close</button>
- <div id="popData"></div>
+<button onclick="popup.style.display='none'">Close</button>
+<div id="popData"></div>
 </div>
 
 <script>
 /* ================= CONFIG ================= */
-const COLS = 5;               // change to 6 if needed
+const COLS = 5; // Milan = 5 | Kalyan = 6
 const PAGE_KEY="pdata_"+location.pathname.replace(/[^a-z0-9]/gi,"_");
 
 /* ================= FAMILY ================= */
@@ -84,25 +87,22 @@ data=data.map(r=>r.map(norm));
 
 /* ================= STATE ================= */
 let activeRow=null;
-let activeMark=null;
 let targetCol=null;
+let activeMark=null;
 
 /* ================= DRAW ================= */
 const tbl=document.getElementById("tbl");
 function draw(){
- let h="<tr>"+["Mon","Tue","Wed","Thu","Fri","Sat"]
-  .slice(0,COLS).map(d=>"<th>"+d+"</th>").join("")+"</tr>";
-
+ let h="<tr>"+["Mon","Tue","Wed","Thu","Fri","Sat"].slice(0,COLS).map(d=>"<th>"+d+"</th>").join("")+"</tr>";
  data.forEach((r,ri)=>{
   h+="<tr>";
   r.forEach((c,ci)=>{
-   let cls="";
+   let cls=(c=="**")?"blank":"";
    if(activeMark){
     let i=ri-activeMark.start;
     if(i>=0 && i<activeMark.shape.length && activeMark.shape[i][ci]) cls="circle";
    }
-   h+=`<td class="${c=="**"?"blank":cls}"
-        contenteditable
+   h+=`<td class="${cls}" contenteditable
         onclick="cellClick(${ri},${ci})"
         oninput="edit(${ri},${ci},this)">${c}</td>`;
   });
@@ -112,14 +112,12 @@ function draw(){
 }
 draw();
 
-/* ================= BASIC OPS ================= */
+/* ================= BASIC ================= */
 function edit(r,c,e){data[r][c]=norm(e.innerText.trim());}
 function addRow(){data.push(Array(COLS).fill("**"));draw();}
 function deleteRow(){
- if(activeRow===null){alert("Select a row first");return;}
- data.splice(activeRow,1);
- activeRow=null;
- draw();
+ if(activeRow==null){alert("Select row first");return;}
+ data.splice(activeRow,1);activeRow=null;draw();
 }
 function saveData(){
  localStorage.setItem(PAGE_KEY,JSON.stringify(data));
@@ -138,7 +136,7 @@ csv.onchange=e=>{
    while(a.length<COLS) a.push("**");
    return a.slice(0,COLS);
   });
-  saveData(); draw();
+  saveData();draw();
  };
  fr.readAsText(f);
 };
@@ -147,38 +145,33 @@ csv.onchange=e=>{
 function cellClick(r,c){
  activeRow=r;
  if(data[r][c]=="**"){
+  targetCol=c;
   makePattern(r,c);
  }
 }
 
-/* ================= PATTERN ================= */
+/* ================= PATTERN CORE ================= */
 let lastMatches=[];
 function makePattern(r,c){
- targetCol=c;
  let base="**";
  for(let i=r;i>=0;i--) if(data[i][c]!="**"){base=data[i][c];break;}
  if(base=="**") return;
 
  let shape=[];
- let start=Math.max(0,r-7);
+ let start=Math.max(0,r-8);
  for(let i=start;i<=r;i++){
-  shape.push(
-   data[i].map(v=>smartMatch(v,base)?1:0)
-  );
+  shape.push(data[i].map(v=>smartMatch(v,base)?1:0));
  }
-
- searchPattern(shape,start);
+ searchPattern(shape,start,base);
 }
 
-function searchPattern(shape,start){
+function searchPattern(shape,start,base){
  lastMatches=[];
  for(let i=0;i<=data.length-shape.length;i++){
   let ok=true;
   for(let k=0;k<shape.length;k++){
    for(let j=0;j<COLS;j++){
-    if(shape[k][j] && !smartMatch(data[i+k][j],data[start+k][targetCol])){
-     ok=false;break;
-    }
+    if(shape[k][j] && !smartMatch(data[i+k][j],base)){ok=false;break;}
    }
    if(!ok) break;
   }
@@ -190,60 +183,71 @@ function searchPattern(shape,start){
 /* ================= CHECK LINES ================= */
 function showChecks(shape,start){
  checks.innerHTML="";
- if(!lastMatches.length){ai.innerHTML="No match";return;}
-
+ if(lastMatches.length<3){
+  ai.innerHTML="Weak pattern";
+  future.innerHTML="";
+  return;
+ }
  lastMatches.slice(0,4).forEach((m,i)=>{
   let d=document.createElement("div");
   d.innerText=(i+1)+". Match at row "+(m.index+1);
-  d.onclick=()=>showOne(shape,m.index);
+  d.onclick=()=>showPopup(shape,m.index);
   checks.appendChild(d);
  });
- showAI(shape,start);
+ runAI(shape,start);
 }
 
 /* ================= POPUP ================= */
 const popup=document.getElementById("popup");
 const popData=document.getElementById("popData");
-function showOne(shape,idx){
+function showPopup(shape,idx){
  activeMark={start:idx,shape};
  draw();
-
- let html="<table>";
+ let h="<table>";
  for(let i=0;i<shape.length;i++){
-  html+="<tr>";
+  h+="<tr>";
   data[idx+i].forEach((v,j)=>{
    let cls=shape[i][j]?"circle":"";
-   html+=`<td class="${cls}">${v}</td>`;
+   h+=`<td class="${cls}">${v}</td>`;
   });
-  html+="</tr>";
+  h+="</tr>";
  }
- html+="</table>";
- popData.innerHTML=html;
+ h+="</table>";
+ popData.innerHTML=h;
  popup.style.display="block";
 }
 
-/* ================= AI ================= */
-function showAI(shape,start){
- let score={};
+/* ================= SUPER AI ================= */
+function runAI(shape,start){
+ let score={},digit={};
 
  lastMatches.forEach(m=>{
   let r=m.index+shape.length;
   if(r<data.length){
    let v=data[r][targetCol];
    if(v!="**"){
-    score[v]=(score[v]||0)+1;
-    score[palti(v)]=(score[palti(v)]||0)+0.5;
-    families[fam(v)]?.forEach(j=>score[j]=(score[j]||0)+0.3);
+    score[v]=(score[v]||0)+3;
+    score[palti(v)]=(score[palti(v)]||0)+2;
+    families[fam(v)]?.forEach(j=>score[j]=(score[j]||0)+1);
+    digit[v[0]]=(digit[v[0]]||0)+1;
+    digit[v[1]]=(digit[v[1]]||0)+1;
    }
   }
  });
 
- let top=Object.entries(score)
-  .sort((a,b)=>b[1]-a[1])
-  .slice(0,4)
-  .map(x=>x[0]);
+ let strongJodi=Object.entries(score)
+  .sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]);
 
- ai.innerHTML="Strong Jodi Prediction:<br>"+top.join(", ");
+ let strongDigit=Object.entries(digit)
+  .sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+
+ ai.innerHTML=
+  "Pattern Confirmed<br><br>"+
+  "Strong Jodi:<br>"+strongJodi.join(", ");
+
+ future.innerHTML=
+  "Strong Single Ank (Open → Close):<br>"+
+  strongDigit.join(", ");
 }
 </script>
 
