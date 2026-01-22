@@ -2,7 +2,7 @@
 <html>
 <head>
 <meta charset="UTF-8">
-<title>Pattern Engine – Level 2</title>
+<title>Pattern Engine – LEVEL 3</title>
 
 <style>
 body{font-family:Arial}
@@ -11,7 +11,7 @@ td,th{border:1px solid #999;padding:5px;text-align:center;font-weight:600}
 td[contenteditable]{background:#fffbe6}
 .blank{background:#eee;cursor:pointer}
 .circle{border:3px solid red;border-radius:50%}
-.best{background:#d4ffd4}
+.activeRow td{background:#e6f2ff}
 #checks div{background:#e8ffe8;margin:4px;padding:6px;cursor:pointer}
 #ai,#future{background:#eef;padding:8px;margin-top:6px;font-weight:600}
 #popup{
@@ -25,7 +25,7 @@ button{margin:4px}
 
 <body>
 
-<h2>🧠 Pattern Engine – Level 2</h2>
+<h2>🧠 Pattern Engine – LEVEL 3</h2>
 
 <input type="file" id="csv">
 <button onclick="addRow()">Add Row</button>
@@ -34,13 +34,13 @@ button{margin:4px}
 
 <table id="tbl"></table>
 
-<h3>✔ Check Lines (Top 3–4)</h3>
+<h3>✔ Check Lines (Min 3)</h3>
 <div id="checks"></div>
 
-<h3>🤖 AI Analysis</h3>
+<h3>🤖 AI (Pattern Logic)</h3>
 <div id="ai"></div>
 
-<h3>🔮 Future AI (Strong)</h3>
+<h3>🔮 Future AI – STRONG</h3>
 <div id="future"></div>
 
 <div id="popup">
@@ -50,7 +50,7 @@ button{margin:4px}
 
 <script>
 /* ================= CONFIG ================= */
-const COLS = 5; // Milan = 5 | Kalyan = 6
+const COLS = 5; // Milan = 5 | Kalyan/Rajdhani = 6
 const PAGE_KEY="pdata_"+location.pathname.replace(/[^a-z0-9]/gi,"_");
 
 /* ================= FAMILY ================= */
@@ -89,13 +89,15 @@ data=data.map(r=>r.map(norm));
 let activeRow=null;
 let targetCol=null;
 let activeMark=null;
+let lastMatches=[];
 
 /* ================= DRAW ================= */
 const tbl=document.getElementById("tbl");
 function draw(){
  let h="<tr>"+["Mon","Tue","Wed","Thu","Fri","Sat"].slice(0,COLS).map(d=>"<th>"+d+"</th>").join("")+"</tr>";
  data.forEach((r,ri)=>{
-  h+="<tr>";
+  let rowCls=(ri===activeRow)?"activeRow":"";
+  h+=`<tr class="${rowCls}">`;
   r.forEach((c,ci)=>{
    let cls=(c=="**")?"blank":"";
    if(activeMark){
@@ -116,8 +118,10 @@ draw();
 function edit(r,c,e){data[r][c]=norm(e.innerText.trim());}
 function addRow(){data.push(Array(COLS).fill("**"));draw();}
 function deleteRow(){
- if(activeRow==null){alert("Select row first");return;}
- data.splice(activeRow,1);activeRow=null;draw();
+ if(activeRow===null){alert("Row select karo");return;}
+ data.splice(activeRow,1);
+ activeRow=null;
+ draw();
 }
 function saveData(){
  localStorage.setItem(PAGE_KEY,JSON.stringify(data));
@@ -136,7 +140,7 @@ csv.onchange=e=>{
    while(a.length<COLS) a.push("**");
    return a.slice(0,COLS);
   });
-  saveData();draw();
+  saveData(); draw();
  };
  fr.readAsText(f);
 };
@@ -148,10 +152,10 @@ function cellClick(r,c){
   targetCol=c;
   makePattern(r,c);
  }
+ draw();
 }
 
-/* ================= PATTERN CORE ================= */
-let lastMatches=[];
+/* ================= PATTERN ================= */
 function makePattern(r,c){
  let base="**";
  for(let i=r;i>=0;i--) if(data[i][c]!="**"){base=data[i][c];break;}
@@ -184,17 +188,17 @@ function searchPattern(shape,start,base){
 function showChecks(shape,start){
  checks.innerHTML="";
  if(lastMatches.length<3){
-  ai.innerHTML="Weak pattern";
+  ai.innerHTML="Pattern weak – no trade";
   future.innerHTML="";
   return;
  }
  lastMatches.slice(0,4).forEach((m,i)=>{
   let d=document.createElement("div");
-  d.innerText=(i+1)+". Match at row "+(m.index+1);
+  d.innerText=(i+1)+". Match @ Row "+(m.index+1);
   d.onclick=()=>showPopup(shape,m.index);
   checks.appendChild(d);
  });
- runAI(shape,start);
+ runAI(shape);
 }
 
 /* ================= POPUP ================= */
@@ -218,7 +222,7 @@ function showPopup(shape,idx){
 }
 
 /* ================= SUPER AI ================= */
-function runAI(shape,start){
+function runAI(shape){
  let score={},digit={};
 
  lastMatches.forEach(m=>{
@@ -236,13 +240,15 @@ function runAI(shape,start){
  });
 
  let strongJodi=Object.entries(score)
-  .sort((a,b)=>b[1]-a[1]).slice(0,4).map(x=>x[0]);
+  .sort((a,b)=>b[1]-a[1])
+  .slice(0,4).map(x=>x[0]);
 
  let strongDigit=Object.entries(digit)
-  .sort((a,b)=>b[1]-a[1]).slice(0,2).map(x=>x[0]);
+  .sort((a,b)=>b[1]-a[1])
+  .slice(0,2).map(x=>x[0]);
 
  ai.innerHTML=
-  "Pattern Confirmed<br><br>"+
+  "Pattern CONFIRMED<br><br>"+
   "Strong Jodi:<br>"+strongJodi.join(", ");
 
  future.innerHTML=
