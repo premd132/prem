@@ -187,7 +187,23 @@ csv.onchange=e=>{
 
 /* PATTERN + AI + FUTURE AI */
 /* (यहाँ नीचे तुम्हारा code EXACT same है — untouched) */
+function runBaseJodiPattern(){
+  BJ_BASE = norm(document.getElementById("baseJodiInput").value);
+  BJ_ROWS = parseInt(document.getElementById("rowCount").value);
+  BJ_MODE = document.getElementById("patternMode").value;
 
+  if(!BJ_BASE) return alert("Base jodi likho");
+
+  BJ_BASE_ROW = findBaseRow(BJ_BASE);
+  if(BJ_BASE_ROW === -1){
+    alert("Base jodi record me nahi mili");
+    return;
+  }
+
+  BJ_PATTERN = buildBottomPattern(BJ_BASE_ROW, BJ_ROWS);
+  BJ_ACTIVE = true;
+  draw();
+}
 let lastMatches=[],topMatches=[];
 function makePattern(r,c){
  targetCol=c;
